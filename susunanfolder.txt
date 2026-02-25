@@ -1,0 +1,58 @@
+STRUKTUR FOLDER SISTEM OCR KTP KECAMATAN SAMBOJA KUALA (FINAL)
+==============================================================
+TugasAkhirCapstone
+├── assetimage/
+SistemOCRSamboja/
+├── admin/
+│   └── includes
+│       └── navbar.php
+│   └── dashboard_admin.php
+│   └── manajemen_operator.php
+├── includes/
+│   └── navbar.php
+├── public/
+│   └── images/           
+├── proses/
+│   ├── config.php
+│   ├── proses_upload.php
+│   ├── proses_simpan.php
+│   ├── proses_koreksi.php
+│   ├── proses_hapus_data.php
+│   └── proses_login_dan_register.php
+├── index.php
+├── dashboard.php
+├── upload.php
+├── prosesocr.php
+├── hasilocr.php
+├── koreksi.php
+├── riwayat.php
+├── pengaturan.php
+└── register.php
+
+PYTHON_OCR/
+├── core/
+│   ├── optimizer.py
+│   ├── preprocessing.py
+│   ├── ocr_engine.py
+│   ├── filters.py
+│   └── ocr_service.py
+├── app.py
+└── temp_uploads/
+
+
+Penjelasan:
+-----------
+- SistemOCRSamboja/:
+  Aplikasi web (PHP) untuk upload, review, koreksi, dan manajemen data KTP. File diupload ke public/images, lalu dikirim ke backend Python lewat proses_upload.php.
+
+- PYTHON_OCR/: 
+  Backend API (Flask + EasyOCR + OpenCV) menerima file dari PHP, memproses pipeline OCR, dan mengembalikan hasil ke web. Semua proses estraksi ada di core/.
+
+cara play di powershell
+cd C:\laragon\www\TugasAkhirCapstone\SistemOCRSamboja\PYTHON_OCR
+python app.py
+
+cara play di bash
+cd /c/laragon/www/TugasAkhirCapstone/SistemOCRSamboja/PYTHON_OCR
+python app.py
+
