@@ -57,7 +57,7 @@ $sql_stats = "SELECT
     SUM(CASE WHEN status_proses = 'pending_review' THEN 1 ELSE 0 END) AS total_pending,
     AVG(CASE WHEN status_proses = 'finalized' THEN skor_kepercayaan ELSE NULL END) AS avg_skor
 FROM log_ocr 
-WHERE id_staf = ?"; // Filter ID Operator
+WHERE id_staf = ?";
 
 $stmt_stats = mysqli_prepare($db, $sql_stats);
 mysqli_stmt_bind_param($stmt_stats, "i", $user_id);

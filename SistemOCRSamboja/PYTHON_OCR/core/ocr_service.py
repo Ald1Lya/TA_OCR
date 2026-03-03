@@ -6,11 +6,10 @@ from .preprocessing import preprocess_for_ocr
 from .ocr_engine import get_text_from_image
 from .filters import filter_and_cleanse_nik
 
-# --- FUNGSI BANTUAN (HELPER VISUALISASI) ---
 def draw_and_save_bounding_box(image_path, img, ocr_results, target_nik):
     """
     Menggambar kotak bounding box.
-    Teks biasa = Hijau tipis.
+    Teks biasa = Hijau tipis + Skor OCR.
     Target NIK = Merah tebal agar user tahu dari mana asal skor akurasi.
     """
     annotated_img = img.copy() 
@@ -18,13 +17,14 @@ def draw_and_save_bounding_box(image_path, img, ocr_results, target_nik):
     for item in ocr_results:
         if len(item) == 3:
             bbox, text, score = item
+            # Koordinat kotak
             pt1 = (int(bbox[0][0]), int(bbox[0][1])) 
             pt2 = (int(bbox[2][0]), int(bbox[2][1])) 
             
-            # Bersihkan teks sementara untuk mencocokkan dengan target_nik
+            # Bersihkan teks untuk pencocokan target
             clean_text = re.sub(r'[^A-Z0-9]', '', text.upper())
             
-            # CEK: Apakah kotak ini adalah SANG TARGET NIK?
+            # Cek apakah ini target NIK yang berhasil difilter
             is_target = False
             if target_nik and target_nik in clean_text:
                 is_target = True
@@ -32,12 +32,15 @@ def draw_and_save_bounding_box(image_path, img, ocr_results, target_nik):
             if is_target:
                 # HIGHLIGHT TARGET NIK (Kotak Merah Tebal)
                 cv2.rectangle(annotated_img, pt1, pt2, (0, 0, 255), 3)
-                label = f"TARGET NIK (Score Asli OCR: {score:.2f})"
-                cv2.putText(annotated_img, label, (pt1[0], pt1[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                label = f"TARGET NIK (OCR Score: {score:.2f})"
+                # Font sedikit lebih besar untuk target
+                cv2.putText(annotated_img, label, (pt1[0], pt1[1] - 12), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
             else:
-                # Teks Biasa (Kotak Hijau Tipis)
+                # TEKS BIASA / NIK MENTAH (Kotak Hijau Tipis)
                 cv2.rectangle(annotated_img, pt1, pt2, (0, 255, 0), 1)
-                cv2.putText(annotated_img, text, (pt1[0], pt1[1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 200, 0), 1)
+                # Tampilkan apa adanya yang dibaca mesin + skornya
+                label_biasa = f"{text} ({score:.2f})"
+                cv2.putText(annotated_img, label_biasa, (pt1[0], pt1[1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 200, 0), 1)
 
     # Simpan ke folder temp_uploads
     temp_dir = os.path.dirname(image_path)
@@ -45,8 +48,17 @@ def draw_and_save_bounding_box(image_path, img, ocr_results, target_nik):
     annotated_filename = "annotated_" + base_name
     annotated_temp_path = os.path.join(temp_dir, annotated_filename)
     
-    cv2.imwrite(annotated_temp_path, annotated_img)
-
+    try:
+        # Encode gambar ke memori dulu
+        is_success, im_buf = cv2.imencode(".jpg", annotated_img)
+        if is_success:
+            # Tulis ke file fisik dan langsung TUTUP
+            with open(annotated_temp_path, "wb") as f_out:
+                f_out.write(im_buf)
+    except Exception as e:
+        print(f"Gagal simpan visualisasi: {e}")
+        
+    return annotated_filename
 
 # --- METODE MAYOR (PIPELINE UTAMA) ---
 def text_recognition_pipeline(image_path):
@@ -72,10 +84,7 @@ def text_recognition_pipeline(image_path):
         reason = "Legacy check"
 
     # --- TAHAP VISUALISASI DENGAN TARGET ---
-    # Kita panggil fungsi gambar dengan membawa 'nik' yang terpilih sebagai target
     draw_and_save_bounding_box(image_path, optimized_img, ocr_results, nik)
-
-    # 5. KEMBALIKAN HASIL KE WEB
     if nik:
         return {"nik": nik, "score": float(final_score), "status": "success", "notes": reason}
     else:

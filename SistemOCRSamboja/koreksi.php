@@ -115,8 +115,9 @@ if ($stmt_audit) {
                 <p class="text-sm text-gray-500 mt-1">ID Dokumen: <span class="font-mono text-gray-700"><?php echo htmlspecialchars($log_id); ?></span></p>
             </div>
             <a href="hasilriwayat.php?id=<?php echo htmlspecialchars($log_id); ?>" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                <i data-feather="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
+                <i data-feather="arrow-left" class="w-4 h-4 mr-2"></i> Kembali ke hasil OCR
             </a>
+       
         </div>
 
         <?php if($error): ?>

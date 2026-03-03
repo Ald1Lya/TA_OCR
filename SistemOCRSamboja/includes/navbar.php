@@ -18,7 +18,6 @@
 
 
   <nav class="flex-1 p-4 space-y-2">
-    <!-- Dashboard -->
     <a href="dashboard.php"
        class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition font-medium
        <?php echo $current_page == 'dashboard.php' ? 'bg-green-100 text-green-600 font-semibold' : 'text-gray-700 hover:bg-gray-100'; ?>">
@@ -53,7 +52,7 @@
 
   </nav>
 
-  <!-- Logout -->
+  
   <div class="p-4 border-t border-gray-200">
     <a href="proses/proses_logout.php"
        class="w-full flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 rounded-lg transition font-medium">

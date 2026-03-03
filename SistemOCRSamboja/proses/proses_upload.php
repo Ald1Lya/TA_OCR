@@ -9,12 +9,22 @@ session_start();
 header('Content-Type: application/json');
 require_once 'config.php';
 
-/* helper response */
+
 function kirimRespon($data) {
     ob_clean();
     echo json_encode($data);
     ob_end_flush();
     exit;
+}
+
+// --- FUNGSI CEK SERVER NYALA/MATI ---
+function isPythonServerAlive($host = '127.0.0.1', $port = 5000) {
+    $connection = @fsockopen($host, $port, $errno, $errstr, 1); // Timeout 1 detik
+    if (is_resource($connection)) {
+        fclose($connection);
+        return true;
+    }
+    return false;
 }
 
 /* cek sesi */
@@ -24,6 +34,14 @@ if (!isset($_SESSION['user_id'])) {
 
 /* upload file */
 if (isset($_FILES['ktp_files'])) {
+
+    // [VALIDASI KRUSIAL] Cek Server Python Dulu!
+    if (!isPythonServerAlive()) {
+        kirimRespon([
+            'success' => false, 
+            'message' => ' GAGAL: Server OCR sedang MATI. Silakan hubungi Admin untuk menyalakan sistem di Panel Kontrol.'
+        ]);
+    }
 
     $files     = $_FILES['ktp_files'];
     $id_staf   = $_SESSION['user_id'];
@@ -63,19 +81,15 @@ if (isset($_FILES['ktp_files'])) {
 
 /* cek status ocr */
 if (isset($_POST['action']) && $_POST['action'] === 'check_status') {
-
     if (!isset($_SESSION['current_log_id'])) {
         kirimRespon(['success' => false]);
     }
 
     $log_id = $_SESSION['current_log_id'];
-
     $sql  = "SELECT status_proses, nik_terdeteksi FROM log_ocr WHERE log_id = ?";
     $stmt = mysqli_prepare($db, $sql);
-
     mysqli_stmt_bind_param($stmt, "i", $log_id);
     mysqli_stmt_execute($stmt);
-
     $res  = mysqli_stmt_get_result($stmt);
     $data = mysqli_fetch_assoc($res);
     mysqli_stmt_close($stmt);
@@ -97,7 +111,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'check_status') {
 
 /* trigger ocr */
 if (isset($_POST['action']) && $_POST['action'] === 'trigger_ocr') {
-
     if (!isset($_SESSION['current_log_id'])) {
         kirimRespon(['success' => false]);
     }
@@ -107,10 +120,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'trigger_ocr') {
 
     $sql = "SELECT nama_file_sistem, nama_file_asli FROM log_ocr WHERE log_id = ?";
     $stmt = mysqli_prepare($db, $sql);
-
     mysqli_stmt_bind_param($stmt, "i", $log_id);
     mysqli_stmt_execute($stmt);
-
     $res  = mysqli_stmt_get_result($stmt);
     $data = mysqli_fetch_assoc($res);
     mysqli_stmt_close($stmt);
@@ -125,8 +136,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'trigger_ocr') {
     mysqli_stmt_close($stmt);
 
     try {
-        $cfile = new CURLFile($pathImg, mime_content_type($pathImg), $data['nama_file_asli']);
-
+        $cfile = new CURLFile($pathImg, mime_content_type($pathImg), $data['nama_file_sistem']);
+        
         $ch = curl_init('http://127.0.0.1:5000/ocr');
         curl_setopt_array($ch, [
             CURLOPT_POST           => true,
@@ -146,7 +157,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'trigger_ocr') {
         $json  = json_decode($response, true);
         $nik   = $json['nik'] ?? null;
         $score = $json['score'] ?? 0;
-
         $statusFinal = $nik ? 'pending_review' : 'failed';
 
         $sql = "UPDATE log_ocr 

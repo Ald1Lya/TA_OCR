@@ -7,9 +7,7 @@ date_default_timezone_set('Asia/Jakarta');
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $action = $_POST['action'];
 
-    // ==========================================
     // PROSES REGISTER (Khusus Admin Pertama)
-    // ==========================================
     if ($action === 'register') {
         $username      = trim($_POST['username']);
         $password      = $_POST['password'];
@@ -56,15 +54,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         exit;
     }
 
-    // ==========================================
+
     // PROSES LOGIN
-    // ==========================================
     if ($action === 'login') {
         $username = trim($_POST['username']);
         $password = $_POST['password'];
         $role     = trim($_POST['role']);
 
-        // Cari user berdasarkan username dan rolenya
+     
         $sql_login = "SELECT * FROM staf_kecamatan WHERE username = ? AND role = ?";
         $stmt = mysqli_prepare($db, $sql_login);
 
@@ -80,16 +77,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if ($result && mysqli_num_rows($result) === 1) {
             $user = mysqli_fetch_assoc($result);
 
-            // Verifikasi Password
+          
             if (password_verify($password, $user['password_hash'])) {
                 
-                // BUG FIX: CEK APAKAH AKUN NONAKTIF?
+           
                 if (strtolower(trim($user['status'])) !== 'aktif') {
                     header('Location: ../index.php?error=Akun Anda telah dinonaktifkan!');
                     exit;
                 }
 
-                // Jika lolos semua, set Session
+          
                 $_SESSION['user_id']      = $user['id'];
                 $_SESSION['username']     = $user['username'];
                 $_SESSION['nama_lengkap'] = $user['nama_lengkap'];

@@ -1,7 +1,6 @@
 <?php
 session_start();
 
-// 1. SATPAM: Cek login dan role
 if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role']) !== 'admin') {
     header('Location: ../index.php');
     exit;
@@ -16,10 +15,9 @@ $current_user = [
     'role'         => strtolower($_SESSION['role'])
 ];
 
-// Ambil ID untuk highlight baris (jika ada)
+
 $highlight_id = isset($_GET['highlight_id']) ? (int)$_GET['highlight_id'] : null;
 
-// --- LOGIKA PAGINATION ---
 $perPage = 6;
 $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $start = ($page - 1) * $perPage;
@@ -62,7 +60,6 @@ function getInitials($name) {
 
 <style> 
     body { font-family: 'Inter', sans-serif; } 
-    /* Animasi Highlight Baris */
     @keyframes highlightFade {
         0% { background-color: #dcfce7; } /* green-100 */
         100% { background-color: transparent; }
@@ -237,7 +234,6 @@ function getInitials($name) {
 document.addEventListener('DOMContentLoaded', () => {
     feather.replace();
 
-    // 1. Toast Notification Setup
     const Toast = Swal.mixin({
         toast: true,
         position: 'top-end',
@@ -246,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
         timerProgressBar: true
     });
 
-    // 2. Cek parameter URL untuk tampilkan Toast
+   
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('success')) {
         Toast.fire({ icon: 'success', title: urlParams.get('success') });
@@ -258,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 
-    // 3. Modal Logic with Animation
+
     const modal = document.getElementById('userModal');
     const modalContent = modal.querySelector('div');
 
@@ -310,7 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     });
 
-    // 4. Delete Confirmation (SweetAlert2)
+
     document.querySelectorAll('.btn-delete').forEach(btn => {
         btn.onclick = function() {
             const form = this.closest('form');

@@ -1,43 +1,58 @@
-STRUKTUR FOLDER SISTEM OCR KTP KECAMATAN SAMBOJA KUALA (FINAL)
-==============================================================
-TugasAkhirCapstone
-├── assetimage/
-SistemOCRSamboja/
-├── admin/
-│   └── includes
-│       └── navbar.php
-│   └── dashboard_admin.php
-│   └── manajemen_operator.php
-├── includes/
-│   └── navbar.php
-├── public/
-│   └── images/           
-├── proses/
-│   ├── config.php
-│   ├── proses_upload.php
-│   ├── proses_simpan.php
-│   ├── proses_koreksi.php
-│   ├── proses_hapus_data.php
-│   └── proses_login_dan_register.php
-├── index.php
-├── dashboard.php
-├── upload.php
-├── prosesocr.php
-├── hasilocr.php
-├── koreksi.php
-├── riwayat.php
-├── pengaturan.php
-└── register.php
-
-PYTHON_OCR/
-├── core/
-│   ├── optimizer.py
-│   ├── preprocessing.py
-│   ├── ocr_engine.py
-│   ├── filters.py
-│   └── ocr_service.py
-├── app.py
-└── temp_uploads/
+TugasAkhirCapstone/
+│
+├── SistemOCRSamboja/            <-- ROOT PROJECT
+│   │
+│   ├── admin/                   <-- Halaman Admin
+│   │   ├── includes/
+│   │   │   └── navbar.php
+│   │   ├── dashboard_admin.php
+│   │   ├── manajemen_operator.php
+│   │   ├── riwayat_keseluruhan.php
+│   │   └── kontrol_sistem.php
+│   │
+│   ├── includes/              
+│   │   └── navbar.php
+│   │
+│   ├── proses/                
+│   │   ├── config.php
+│   │   ├── proses_excel.php    
+│   │   ├── proses_hapus_data.php 
+│   │   ├── proses_koreksi.php
+│   │   └── proses_login_dan_register.php
+│   │   └── proses_logout.php
+│   │   ├── proses_pdf.php 
+│   │   └── proses_pengaturan_pengguna.php
+│   │   ├── proses_simpan.php
+│   │   ├── proses_upload.php    
+│   │
+│   ├── public/                  <-- Penyimpanan File
+│   │   └── images/              <-- (KTP masuk sini)
+│   │
+│   ├── PYTHON_OCR/              <-- Engine OCR
+│   │   ├── core/                
+│   │   │   ├── filters.py
+│   │   │   ├── ocr_engine.py
+│   │   │   └── ocr_service.py   (pipeline OCR)
+│   │   │   ├── optimizer.py     
+│   │   │   ├── preprocessing.py
+│   │   ├── temp_uploads/        <-- (Zona Lewat & Hapus dan untuk melihat hasil raw OCR)
+│   │   ├── test/
+|   |   |   └── anomali/
+|   |   |   └── normal/
+│   │   ├── app.py               (Server Flask)
+│   │   ├── ocr_log.txt
+│   │   └── start_ocr.bat
+│   │
+│   ├── dashboard.php
+│   ├── hasilocr.php
+│   ├── hasilriwayat.php
+│   ├── index.php                (Login)  <-- Halaman oprator
+│   ├── koreksi.php       
+│   ├── prosesocr.php
+│   ├── register.php
+│   ├── riwayat.php
+│   └── pengaturan.php
+│   ├── upload.php
 
 
 Penjelasan:

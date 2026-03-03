@@ -1,107 +1,93 @@
 import re
 
-# --- FUNGSI VALIDATOR ---
 def validate_is_ktp(ocr_results, min_keywords=2):
+    # Cek cepat apakah dokumen ini kemungkinan KTP
     ktp_keywords = [
-        "PROVINSI", "KABUPATEN", "KOTA", "NIK", "NAM", "LAHIR", 
-        "ALAMAT", "AGAMA", "KAWIN", "PEKERJAAN", "WARGA", "BERLAKU"
+        "PROVINSI", "KABUPATEN", "KOTA", "NIK",
+        "NAM", "LAHIR", "ALAMAT", "AGAMA",
+        "KAWIN", "PEKERJAAN", "WARGA", "BERLAKU"
     ]
-    found_count = 0
+
+    found = 0
     for item in ocr_results:
         if not item or len(item) < 2:
             continue
-        text = item[1].upper()
-        for keyword in ktp_keywords:
-            if keyword in text:
-                found_count += 1
-                break 
-    if found_count >= min_keywords:
-        return True
-    return False
 
-# --- FUNGSI FILTER & CLEANSE ---
+        text = item[1].upper()
+        if any(k in text for k in ktp_keywords):
+            found += 1
+
+    return found >= min_keywords
+
+
 def filter_and_cleanse_nik(ocr_results):
     if not validate_is_ktp(ocr_results):
-        return (None, 0.0, "Document rejected: Not a KTP")
+        return (None, 0.0, "Not a KTP document")
 
     nik_regex = re.compile(r'\d{16}')
 
-    all_numbers_found = ""
-    accumulated_score = 0.0
-    score_count = 0
-    best_candidate = None
+    best_nik = None
     best_score = -1.0
+
+    collected_digits = ""
+    total_score = 0.0
+    score_count = 0
 
     for item in ocr_results:
         if not isinstance(item, (list, tuple)) or len(item) < 3:
             continue
-        
+
         bbox, text, score = item
-        if not text or not isinstance(text, str):
+        if not text:
             continue
-        
-        # 1. Ambil teks dan jadikan huruf besar
-        raw_text = text.upper()
-        
-        # 2. TAHAP BARU: Buang kata pengganggu SEBELUM translasi!
-        # Ini mencegah huruf 'I' di 'NIK' berubah jadi angka '1'
-        words_to_remove = ["NIK", "PROVINSI", "KOTA", "KABUPATEN", "KAB", "ISLAM"]
-        for word in words_to_remove:
-            raw_text = raw_text.replace(word, "")
-        
-        # 3. Cleanup Agresif
+
+        raw = text.upper()
+
+        # Buang kata yang sering ganggu deteksi angka
+        for word in ["NIK", "PROVINSI", "KOTA", "KABUPATEN", "KAB", "ISLAM"]:
+            raw = raw.replace(word, "")
+
         clean = (
-            raw_text
-                .replace(" ", "")
-                .replace(":", "") 
-                .replace("-", "")
-                .replace(".", "")
-                .translate(str.maketrans({
-                    "O": "0", "D": "0", "U": "0", "Q": "0", "C": "0",
-                    "I": "1", "L": "1", "|": "1", "]": "1", "!": "1", "T": "1",
-                    "B": "8", "&": "8",
-                    "S": "5", "$": "5",
+            raw.replace(" ", "")
+               .replace(":", "")
+               .replace("-", "")
+               .replace(".", "")
+               .translate(str.maketrans({
+                    "O": "0", "D": "0", "U": "0", "Q": "0",
+                    "I": "1", "L": "1", "|": "1",
+                    "B": "8",
+                    "S": "5",
                     "G": "6",
                     "Z": "2",
                     "A": "4",
-                    "J": "7", "?": "7",
-                    "E": "3" 
-                }))
+                    "E": "3"
+               }))
         )
 
-        # 4. Cari NIK
         match = nik_regex.search(clean)
-        if match:
-            nik_found = match.group(0)
-            try:
-                base_score = float(score)
-            except:
-                base_score = 0.0
-            
-            hybrid_score = (base_score * 0.7) + 0.3 
-            hybrid_score = round(min(hybrid_score, 0.97), 4)
+        try:
+            score_val = float(score)
+        except:
+            score_val = 0.0
 
+        if match:
+            hybrid_score = min((score_val * 0.7) + 0.3, 0.97)
             if hybrid_score > best_score:
                 best_score = hybrid_score
-                best_candidate = nik_found
-        
-        # Logika Sapu Jagat
-        digits_only = "".join(filter(str.isdigit, clean))
-        if len(digits_only) > 0: 
-            all_numbers_found += digits_only
-            try:
-                accumulated_score += float(score)
-                score_count += 1
-            except:
-                pass
+                best_nik = match.group(0)
 
-    # --- EKSEKUSI STRATEGI CADANGAN ---
-    if not best_candidate:
-        match_fallback = nik_regex.search(all_numbers_found)
-        if match_fallback:
-            avg_visual_score = accumulated_score / score_count if score_count > 0 else 0.0
-            final_fallback_score = (avg_visual_score * 0.6) + 0.4
-            final_fallback_score = round(min(final_fallback_score, 0.95), 4)
-            return (match_fallback.group(0), final_fallback_score, "Success (Fallback)")
+        digits = "".join(filter(str.isdigit, clean))
+        if digits:
+            collected_digits += digits
+            total_score += score_val
+            score_count += 1
 
-    return (best_candidate, best_score, "Success") if best_candidate else (None, 0.0, "NIK not found")
+    # Fallback kalau NIK kepisah-pisah
+    if not best_nik:
+        fallback = nik_regex.search(collected_digits)
+        if fallback:
+            avg_score = total_score / score_count if score_count else 0.0
+            final_score = min((avg_score * 0.6) + 0.4, 0.95)
+            return (fallback.group(0), final_score, "Fallback result")
+
+    return (best_nik, best_score, "Success") if best_nik else (None, 0.0, "NIK not found")

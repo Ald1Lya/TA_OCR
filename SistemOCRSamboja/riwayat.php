@@ -147,9 +147,6 @@ function getStatusBadge($status) {
     .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
-
-    /* --- ANIMASI HIGHLIGHT BARIS (BARU) --- */
-    /* Ini bikin warna hijau muda, terus pelan-pelan jadi transparan dalam 3 detik */
     @keyframes fadeHighlight {
         0% { background-color: #dcfce7; } /* green-100 */
         100% { background-color: transparent; }

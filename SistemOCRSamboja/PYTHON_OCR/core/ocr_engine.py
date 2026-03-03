@@ -1,8 +1,8 @@
 import easyocr
 import warnings
 
-# Inisialisasi sekali saja saat modul di-load
-warnings.filterwarnings("ignore", category=UserWarning) # Sembunyikan warning CUDA
+
+warnings.filterwarnings("ignore", category=UserWarning) 
 try:
     reader = easyocr.Reader(['id']) 
 except Exception as e:
@@ -16,6 +16,6 @@ def get_text_from_image(image):
     if reader is None:
         raise Exception("EasyOCR reader tidak terinisialisasi.")
         
-    # 'detail=1' memberikan (bbox, text, score)
+  
     results = reader.readtext(image, detail=1)
     return results

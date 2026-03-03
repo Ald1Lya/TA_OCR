@@ -186,26 +186,21 @@ $gambar_exists = (
         <h3 class="text-sm font-semibold text-gray-900 mb-4">Raw Pembacaan Mesin OCR (Bounding Box)</h3>
         <div class="flex items-center justify-center rounded-lg bg-gray-100 border border-gray-200 p-2 overflow-hidden">
             <?php 
-                // KUNCI UTAMANYA DI SINI: Nggak usah pakai ../ (naik folder)
-                // Karena PYTHON_OCR ada di dalam folder yang sama dengan hasilocr.php
-                $python_dir = realpath(__DIR__ . '/PYTHON_OCR/temp_uploads/');
                 
-                // Kalau radar relative-nya gagal, kita kunci pakai alamat mutlak dari lu!
+                $python_dir = realpath(__DIR__ . '/PYTHON_OCR/temp_uploads/');
+               
                 if (!$python_dir || !file_exists($python_dir)) {
                     $python_dir = 'C:/laragon/www/SistemOCRSamboja/PYTHON_OCR/temp_uploads/';
                 }
                 
-                // Pastikan ada slash di akhir
                 $python_dir = rtrim($python_dir, '/\\') . '/';
 
                 $found_physical_path = '';
                 
                 if (file_exists($python_dir)) {
-                    // Tarik SEMUA file berawalan annotated_ di folder Python
                     $semua_file_annotated = glob($python_dir . 'annotated_*.*');
                     
                     if (!empty($semua_file_annotated)) {
-                        // AMBIL FILE PALING BARU SAJA!
                         usort($semua_file_annotated, function($a, $b) {
                             return filemtime($b) - filemtime($a);
                         });
@@ -216,7 +211,6 @@ $gambar_exists = (
                 
                 $img_src = '';
                 if (!empty($found_physical_path)) {
-                    // SEDOT GAMBAR JADI BASE64
                     $img_data = @file_get_contents($found_physical_path);
                     if ($img_data !== false) {
                         $type = pathinfo($found_physical_path, PATHINFO_EXTENSION);
@@ -265,7 +259,7 @@ $gambar_exists = (
     feather.replace();
     const copyBtn = document.getElementById('copyNikBtn');
     copyBtn.addEventListener('click', () => {
-      // Ambil NIK yang tidak terformat (DINAMIS)
+     
       const nik = '<?php echo htmlspecialchars($nik_terdeteksi); ?>'; 
       if (!nik || nik === 'TIDAK DITEMUKAN') {
         alert('Tidak ada NIK untuk disalin.');

@@ -82,66 +82,49 @@
 <script>
     feather.replace();
 
-    const progressBar = document.getElementById('progressBar');
+    const progressBar  = document.getElementById('progressBar');
     const progressText = document.getElementById('progressText');
-    const statusTitle = document.querySelector('h2');
-    const steps = document.querySelectorAll('#steps > div'); 
-    
-    // Status Backend
-    let backendFinished = false; 
+    const statusTitle  = document.querySelector('h2');
+    const steps        = document.querySelectorAll('#steps > div');
+
+    let backendFinished = false;
     let currentProgress = 0;
 
     document.addEventListener("DOMContentLoaded", () => {
-        
-        // 1. ANIMASI LOADING (INTERVAL TUNGGAL)
-        // Kita pakai satu interval saja untuk menangani "Loading Lambat" maupun "Loading Cepat"
+
+        // Animasi progress
         const animationInterval = setInterval(() => {
-            
             let increment = 0;
 
             if (!backendFinished) {
-                // === FASE 1: MENUNGGU (Jalan Santai) ===
-                // Estimasi: Mencapai 90% dalam waktu sekitar 10-15 detik
                 if (currentProgress < 90) {
-                    increment = Math.random() * 0.5 + 0.2; // Naik 0.2% - 0.7% per tick
+                    increment = Math.random() * 0.5 + 0.2;
                 }
             } else {
-                // === FASE 2: NGEBUT (Backend Sudah Selesai) ===
-                // Kita isi sisa progress dengan cepat agar user melihat efek 'hijau menjalar'
-                // Naik 5% per tick (Selesai dalam < 2 detik dari posisi manapun)
-                increment = 4.0; 
+                increment = 4;
             }
 
-            // Terapkan kenaikan
             currentProgress += increment;
 
-            // Mentok di 100
             if (currentProgress >= 100) {
                 currentProgress = 100;
-                
-                // Jika backend sudah oke dan visual sudah 100%, baru redirect
                 if (backendFinished) {
                     clearInterval(animationInterval);
                     finalizeAndRedirect();
                 }
             } else if (currentProgress > 90 && !backendFinished) {
-                // Mentok di 90% kalau backend belum kelar
                 currentProgress = 90;
             }
 
-            // Update Visual
             updateVisuals(currentProgress);
+        }, 50);
 
-        }, 50); // Update sangat cepat (setiap 50ms) agar animasi halus
-
-
-        // 2. TRIGGER OCR (Di Background)
+        // Trigger proses OCR
         const formData = new FormData();
         formData.append('action', 'trigger_ocr');
         fetch('proses/proses_upload.php', { method: 'POST', body: formData });
 
-
-        // 3. POLLING DATABASE (Cek Status)
+        // Polling status backend
         const poller = setInterval(async () => {
             if (backendFinished) {
                 clearInterval(poller);
@@ -152,69 +135,61 @@
             checkForm.append('action', 'check_status');
 
             try {
-                const res = await fetch('proses/proses_upload.php', { method: 'POST', body: checkForm });
+                const res  = await fetch('proses/proses_upload.php', { method: 'POST', body: checkForm });
                 const json = await res.json();
 
-                // Jika Database bilang OK
                 if (json.success && (json.status === 'done' || json.status === 'failed_but_continue')) {
-                    backendFinished = true; // Ini akan memicu "FASE 2: NGEBUT" di atas
-                    if(statusTitle) statusTitle.textContent = "Finalisasi Data...";
-                } 
-            } catch (e) { }
+                    backendFinished = true;
+                    if (statusTitle) statusTitle.textContent = "Finalisasi Data...";
+                }
+            } catch (e) {}
+        }, 1000);
 
-        }, 1000); // Cek tiap 1 detik
-
-        
-        // --- FUNGSI UPDATE VISUAL ---
         function updateVisuals(percent) {
             const value = Math.round(percent);
             progressBar.style.width = value + '%';
             progressText.textContent = value + '%';
-            
-            // Logika Langkah (Step 1-4)
-            // 0-25: Step 1, 26-50: Step 2, 51-75: Step 3, 76-100: Step 4
-            const currentStepIndex = Math.floor((value - 1) / 25); 
+
+            const currentStepIndex = Math.floor((value - 1) / 25);
 
             steps.forEach((step, index) => {
                 const iconContainer = step.querySelector('span');
                 const text = step.querySelector('span:nth-child(2)');
                 const icon = step.querySelector('i');
 
-                // Efek menyala Hijau jika sudah dilewati
                 if (index <= currentStepIndex) {
-                    if (!step.classList.contains('bg-green-50')) {
-                        step.classList.remove('bg-gray-50', 'border-gray-200');
-                        step.classList.add('bg-green-50', 'border-green-200', 'transition-all', 'duration-500'); // Animasi CSS
-                        
-                        if (iconContainer) {
-                            iconContainer.classList.remove('bg-gray-200', 'text-gray-500');
-                            iconContainer.classList.add('bg-green-100', 'text-green-600', 'scale-110'); // Efek pop
-                        }
-                        if (text) {
-                            text.classList.remove('text-gray-700');
-                            text.classList.add('text-green-800', 'font-bold');
-                        }
-                        if (icon && index < currentStepIndex) { // Centang step sebelumnya
-                            icon.setAttribute('data-feather', 'check');
-                            feather.replace();
-                        }
+                    step.classList.remove('bg-gray-50', 'border-gray-200');
+                    step.classList.add('bg-green-50', 'border-green-200', 'transition-all', 'duration-500');
+
+                    if (iconContainer) {
+                        iconContainer.classList.remove('bg-gray-200', 'text-gray-500');
+                        iconContainer.classList.add('bg-green-100', 'text-green-600');
+                    }
+
+                    if (text) {
+                        text.classList.remove('text-gray-700');
+                        text.classList.add('text-green-800', 'font-bold');
+                    }
+
+                    if (icon && index < currentStepIndex) {
+                        icon.setAttribute('data-feather', 'check');
+                        feather.replace();
                     }
                 }
             });
         }
 
         function finalizeAndRedirect() {
-            // Pastikan semua step hijau centang
             steps.forEach(step => {
                 const icon = step.querySelector('i');
-                if(icon) {
+                if (icon) {
                     icon.setAttribute('data-feather', 'check');
                     feather.replace();
                 }
             });
 
-            if(statusTitle) statusTitle.textContent = "Selesai! Mengalihkan...";
-            
+            if (statusTitle) statusTitle.textContent = "Selesai! Mengalihkan...";
+
             setTimeout(() => {
                 window.location.href = 'hasilocr.php';
             }, 800);
