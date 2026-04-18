@@ -198,29 +198,37 @@ $gambar_exists = (
         <div class="flex items-center justify-center rounded-lg bg-gray-100 border border-gray-200 p-2 overflow-hidden">
             <?php 
                 
-                $python_dir = realpath(__DIR__ . '/PYTHON_OCR/temp_uploads/');
+ $python_dir = realpath(__DIR__ . '/PYTHON_OCR/temp_uploads/');
               
+                // Path Hardcode disesuaikan dengan struktur final Tugas Akhir lu
                 if (!$python_dir || !file_exists($python_dir)) {
-                    $python_dir = 'C:/laragon/www/SistemOCRSamboja/PYTHON_OCR/temp_uploads/';
+                    $python_dir = 'C:/laragon/www/TugasAkhirCapstone/SistemOCRSamboja/PYTHON_OCR/temp_uploads/';
                 }
               
                 $python_dir = rtrim($python_dir, '/\\') . '/';
 
                 $found_physical_path = '';
                 
-                if (file_exists($python_dir)) {
-                   
-                    $semua_file_annotated = glob($python_dir . 'annotated_*.*');
+                if (file_exists($python_dir) && !empty($hasil['nama_file_sistem'])) {
+                    // Kita cari file BERDASARKAN NAMA SISTEM, bukan waktu terbaru
+                    $nama_file = $hasil['nama_file_sistem']; // cth: ktp_123.jpg
                     
-                    if (!empty($semua_file_annotated)) {
-                        usort($semua_file_annotated, function($a, $b) {
-                            return filemtime($b) - filemtime($a);
-                        });
+                    // Target 1: Nama yang presisi (annotated_ktp_123.jpg)
+                    $target_presisi = $python_dir . 'annotated_' . $nama_file;
+                    
+                    if (file_exists($target_presisi)) {
+                        $found_physical_path = $target_presisi;
+                    } else {
+                  
+                        $nama_murni = pathinfo($nama_file, PATHINFO_FILENAME);
+                        $pencarian = glob($python_dir . '*annotated_*' . $nama_murni . '*');
                         
-                        $found_physical_path = $semua_file_annotated[0];
+                        if (!empty($pencarian)) {
+                            $found_physical_path = $pencarian[0];
+                        }
                     }
                 }
-                
+
                 $img_src = '';
                 if (!empty($found_physical_path)) {
                     $img_data = @file_get_contents($found_physical_path);

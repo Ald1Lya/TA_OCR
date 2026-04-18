@@ -114,9 +114,17 @@ if ($stmt_audit) {
                 <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Koreksi Data OCR</h1>
                 <p class="text-sm text-gray-500 mt-1">ID Dokumen: <span class="font-mono text-gray-700"><?php echo htmlspecialchars($log_id); ?></span></p>
             </div>
-            <a href="hasilriwayat.php?id=<?php echo htmlspecialchars($log_id); ?>" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                <i data-feather="arrow-left" class="w-4 h-4 mr-2"></i> Kembali ke hasil OCR
+      <div class="flex items-center gap-3">
+            <a href="hasilriwayat.php?id=<?php echo htmlspecialchars($log_id); ?>" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition shadow-sm">
+                <i data-feather="arrow-left" class="w-4 h-4 mr-2"></i> 
+                Kembali ke Hasil OCR
             </a>
+
+            <a href="riwayat.php?id=<?php echo htmlspecialchars($log_id); ?>" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition shadow-sm">
+                <i data-feather="list" class="w-4 h-4 mr-2"></i> 
+                Kembali ke Riwayat Upload
+            </a>
+        </div>
        
         </div>
 

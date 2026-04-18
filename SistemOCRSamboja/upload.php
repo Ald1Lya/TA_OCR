@@ -215,6 +215,7 @@ if (!$user || strtolower(trim($user['status'])) !== 'aktif') {
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
   <script>
     feather.replace();
 
@@ -259,11 +260,17 @@ if (!$user || strtolower(trim($user['status'])) !== 'aktif') {
         document.getElementById("rotate-slider").value = 0;
 
         if (cropper) cropper.destroy();
+        
+        // --- [PERBAIKAN FINAL]: Sistem boleh zoom untuk Auto-Fit, User JANGAN ---
         cropper = new Cropper(cropImage, {
             viewMode: 1,
             background: false,
             responsive: true,
-            autoCropArea: 0.8
+            autoCropArea: 0.8,
+            
+            zoomable: true,         // WAJIB TRUE biar sistem bisa ngecilin KTP pas diputar ke horizontal
+            zoomOnWheel: false,     // TETAP MATI: Cegah zoom pakai scroll mouse
+            zoomOnTouch: false      // TETAP MATI: Cegah zoom pakai cubitan jari di HP
         });
       };
       reader.readAsDataURL(file);
@@ -353,11 +360,10 @@ if (!$user || strtolower(trim($user['status'])) !== 'aktif') {
                 window.location.href = "prosesocr.php";
             });
         } else {
-            // Tampilkan Pesan Error Server Mati
             Swal.fire({
                 icon: 'error',
                 title: 'Gagal Memproses',
-                html: data.message || 'Terjadi kesalahan sistem.', // Pakai html biar bold nya kebaca
+                html: data.message || 'Terjadi kesalahan sistem.', 
                 confirmButtonColor: '#dc2626'
             });
             btn.innerHTML = originalText;
@@ -379,20 +385,21 @@ if (!$user || strtolower(trim($user['status'])) !== 'aktif') {
 
     // --- 3. AUTO REFRESH RIWAYAT (AJAX) ---
     function updateRiwayat() {
-        // Panggil endpoint yang sama dengan parameter ?ajax_history=1
         fetch('?ajax_history=1')
             .then(response => response.text())
             .then(html => {
-                document.getElementById('riwayat-container').innerHTML = html;
+                const container = document.getElementById('riwayat-container');
+                if (container) { 
+                    container.innerHTML = html;
+                }
             })
             .catch(err => console.error('Gagal update riwayat:', err));
     }
 
-    // Jalankan pertama kali
     updateRiwayat();
-    // Jalankan setiap 5 detik
     setInterval(updateRiwayat, 5000);
 
   </script>
+
 </body>
 </html>

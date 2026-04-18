@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 import os
-import gc  # <--- [PENTING 1] Impor Garbage Collector
+import gc  
 from werkzeug.utils import secure_filename
 
 # Impor Metode Mayor (Pipeline)
@@ -34,15 +34,13 @@ def handle_ocr_request():
             # 2. Jalankan Metode Mayor (Pipeline)
             result = text_recognition_pipeline(temp_image_path)
             
-            # --- [PENTING 2] JURUS MELEPAS KUNCI FILE ---
-            # Kita harus hapus objek 'file' dari memori Flask
+            # hapus objek 'file' dari memori Flask
             # dan paksa Python bersih-bersih (Garbage Collection)
             # supaya Windows mau ngelepas file lock-nya.
             del file
             gc.collect() 
             
             # 3. Hapus file sementara (Input Mentah)
-            # Sekarang os.remove gak bakal ditolak sama Windows
             if os.path.exists(temp_image_path):
                 os.remove(temp_image_path)
             
@@ -56,9 +54,8 @@ def handle_ocr_request():
                 try:
                     os.remove(temp_image_path)
                 except:
-                    pass # Kalau masih gagal, biarin PHP yang urus nanti
+                    pass 
             return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == '__main__':
-    # Threaded=False membantu mencegah locking di Windows
     app.run(debug=True, port=5000, threaded=False)

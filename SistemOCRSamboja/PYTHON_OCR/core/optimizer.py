@@ -4,7 +4,7 @@ import os
 
 def optimize_image(image_path):
     """
-    Metode Minor #1 (Si Tukang Pintu) - VERSI SAFE READ.
+    Tukang Pintu.
     Membaca file sebagai bytes ke RAM dulu, baru didecode.
     Ini menjamin file fisik TIDAK DIKUNCI oleh OpenCV.
     """

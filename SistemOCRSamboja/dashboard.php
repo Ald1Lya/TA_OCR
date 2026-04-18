@@ -211,6 +211,9 @@ function getStatusBadge($status) {
             <h3 class="font-bold text-gray-800">5 Scan Terakhir Saya</h3>
             <a href="riwayat.php" class="text-sm font-bold text-green-600 hover:text-green-800">Lihat Semua &rarr;</a>
         </div>
+        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+            <a href="upload.php" class="text-sm font-bold text-green-600 hover:text-green-800">Upload KTP &rarr;</a>
+        </div>
         <div class="overflow-x-auto">
             <table class="w-full text-sm text-left">
                 <thead class="bg-gray-50 border-b">

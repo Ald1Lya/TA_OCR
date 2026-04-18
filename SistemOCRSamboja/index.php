@@ -102,7 +102,7 @@ if ($db) {
     </form>
 
     <div class="mt-6 pt-6 border-t border-gray-200 text-center">
-      <p class="text-xs text-gray-500">Sistem Keamanan Tingkat Tinggi</p>
+      <p class="text-xs text-gray-500">Silahkan Login Ke Sistem</p>
     </div>
   </div>
 

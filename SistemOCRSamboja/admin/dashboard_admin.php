@@ -18,10 +18,11 @@ $currentUser = [
 ];
 
 $totalOperator = 0;
-$totalScan     = 0;
+$totalScan7Hari = 0;
 $aktivitas     = [];
 
 if ($db) {
+    // 1. Ambil Total Operator
     $qOperator = mysqli_query(
         $db,
         "SELECT COUNT(id) AS total FROM staf_kecamatan WHERE role = 'operator'"
@@ -30,14 +31,16 @@ if ($db) {
         $totalOperator = mysqli_fetch_assoc($qOperator)['total'];
     }
 
+    // 2. Ambil Total Scan (DIFILTER HANYA 7 HARI TERAKHIR)
     $qScan = mysqli_query(
         $db,
-        "SELECT COUNT(log_id) AS total FROM log_ocr"
+        "SELECT COUNT(log_id) AS total FROM log_ocr WHERE waktu_upload >= DATE_SUB(NOW(), INTERVAL 7 DAY)"
     );
     if ($qScan) {
-        $totalScan = mysqli_fetch_assoc($qScan)['total'];
+        $totalScan7Hari = mysqli_fetch_assoc($qScan)['total'];
     }
 
+    // 3. Ambil 5 Aktivitas Terbaru
     $qAktivitas = mysqli_query(
         $db,
         "SELECT 
@@ -112,33 +115,63 @@ function statusBadge($status)
         </p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div class="bg-white p-6 rounded-xl border shadow-sm flex gap-4 border-l-4 border-green-500">
-            <div class="p-4 bg-green-50 rounded-lg text-green-600">
-                <i data-feather="users"></i>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        
+        <a href="manajemen_operator.php" class="bg-white p-6 rounded-xl border shadow-sm flex items-center justify-between border-l-4 border-green-500 hover:shadow-md hover:-translate-y-1 hover:border-green-600 transition-all cursor-pointer group">
+            <div class="flex gap-4 items-center">
+                <div class="p-4 bg-green-50 rounded-lg text-green-600 group-hover:bg-green-100 transition-colors">
+                    <i data-feather="users"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-bold text-gray-500 uppercase">Kelola Operator</p>
+                    <h3 class="text-2xl font-bold text-gray-800"><?= $totalOperator ?> Orang</h3>
+                </div>
             </div>
-            <div>
-                <p class="text-sm font-bold text-gray-500 uppercase">Total Operator</p>
-                <h3 class="text-2xl font-bold"><?= $totalOperator ?> Orang</h3>
+            <div class="text-gray-300 group-hover:text-green-500 transition-colors">
+                <i data-feather="chevron-right"></i>
             </div>
-        </div>
+        </a>
 
-        <div class="bg-white p-6 rounded-xl border shadow-sm flex gap-4 border-l-4 border-blue-500">
-            <div class="p-4 bg-blue-50 rounded-lg text-blue-600">
-                <i data-feather="file-text"></i>
+        <a href="riwayat_keseluruhan.php" class="bg-white p-6 rounded-xl border shadow-sm flex items-center justify-between border-l-4 border-blue-500 hover:shadow-md hover:-translate-y-1 hover:border-blue-600 transition-all cursor-pointer group">
+            <div class="flex gap-4 items-center">
+                <div class="p-4 bg-blue-50 rounded-lg text-blue-600 group-hover:bg-blue-100 transition-colors">
+                    <i data-feather="file-text"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-bold text-gray-500 uppercase">KTP Diproses</p>
+                    <div class="flex items-baseline gap-2 mt-1">
+                        <h3 class="text-2xl font-bold text-gray-800"><?= $totalScan7Hari ?></h3>
+                        <span class="text-xs font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">7 Hari Terakhir</span>
+                    </div>
+                </div>
             </div>
-            <div>
-                <p class="text-sm font-bold text-gray-500 uppercase">Total KTP Diproses</p>
-                <h3 class="text-2xl font-bold"><?= $totalScan ?> Dokumen</h3>
+            <div class="text-gray-300 group-hover:text-blue-500 transition-colors">
+                <i data-feather="chevron-right"></i>
             </div>
-        </div>
+        </a>
+
+        <a href="kontrol_sistem.php" class="bg-white p-6 rounded-xl border shadow-sm flex items-center justify-between border-l-4 border-purple-500 hover:shadow-md hover:-translate-y-1 hover:border-purple-600 transition-all cursor-pointer group">
+            <div class="flex gap-4 items-center">
+                <div class="p-4 bg-purple-50 rounded-lg text-purple-600 group-hover:bg-purple-100 transition-colors">
+                    <i data-feather="server"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-bold text-gray-500 uppercase">Kontrol Sistem</p>
+                    <h3 class="text-lg font-bold text-gray-800 mt-1">Server OCR</h3>
+                </div>
+            </div>
+            <div class="text-gray-300 group-hover:text-purple-500 transition-colors">
+                <i data-feather="chevron-right"></i>
+            </div>
+        </a>
+
     </div>
 
     <div class="bg-white rounded-xl border shadow-md overflow-hidden">
         <div class="px-6 py-4 border-b flex justify-between items-center">
             <h2 class="text-lg font-bold">Aktivitas Scan Terbaru</h2>
             <a href="riwayat_keseluruhan.php" class="text-sm font-bold text-green-600 hover:underline">
-                Kelola Riwayat →
+                Lihat Semua Riwayat →
             </a>
         </div>
 
@@ -156,7 +189,7 @@ function statusBadge($status)
                 <?php if (!$aktivitas): ?>
                     <tr>
                         <td colspan="5" class="px-6 py-8 text-center text-gray-500">
-                            Belum ada aktivitas scan.
+                            Belum ada aktivitas scan dalam waktu dekat.
                         </td>
                     </tr>
                 <?php else: foreach ($aktivitas as $row): ?>
@@ -172,7 +205,7 @@ function statusBadge($status)
                         </td>
                         <td class="px-6 py-4">
                             <?php if ($row['nik']): ?>
-                                <span class="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                                <span class="font-mono text-sm bg-gray-100 px-2 py-1 rounded border border-gray-200">
                                     <?= htmlspecialchars($row['nik']) ?>
                                 </span>
                             <?php else: ?>
@@ -196,4 +229,3 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 </body>
-</html>

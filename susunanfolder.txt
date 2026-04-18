@@ -35,7 +35,7 @@ TugasAkhirCapstone/
 │   │   │   └── ocr_service.py   (pipeline OCR)
 │   │   │   ├── optimizer.py     
 │   │   │   ├── preprocessing.py
-│   │   ├── temp_uploads/        <-- (Zona Lewat & Hapus dan untuk melihat hasil raw OCR)
+│   │   ├── temp_uploads/        <-- (melihat hasil raw OCR)
 │   │   ├── test/
 |   |   |   └── anomali/
 |   |   |   └── normal/
@@ -43,17 +43,15 @@ TugasAkhirCapstone/
 │   │   ├── ocr_log.txt
 │   │   └── start_ocr.bat
 │   │
-│   ├── dashboard.php
+│   ├── dashboard.php            <-- Halaman oprator
 │   ├── hasilocr.php
-│   ├── hasilriwayat.php
-│   ├── index.php                (Login)  <-- Halaman oprator
+│   ├── hasilriwayat.php              
 │   ├── koreksi.php       
 │   ├── prosesocr.php
-│   ├── register.php
 │   ├── riwayat.php
-│   └── pengaturan.php
 │   ├── upload.php
-
+├── index.php                    <-- Halaman Login Operator dan Admin serta register untuk Admin Saja
+├── register.php
 
 Penjelasan:
 -----------
