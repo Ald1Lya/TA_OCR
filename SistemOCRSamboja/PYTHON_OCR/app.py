@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 import os
-import gc  
+import torch  # [FIX 1]: WAJIB IMPORT TORCH DI SINI
 from werkzeug.utils import secure_filename
 
 # Impor Metode Mayor (Pipeline)
@@ -24,7 +24,6 @@ def handle_ocr_request():
 
     if file:
         filename = secure_filename(file.filename)
-        # Gunakan absolute path biar aman
         temp_image_path = os.path.abspath(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         
         try:
@@ -34,27 +33,34 @@ def handle_ocr_request():
             # 2. Jalankan Metode Mayor (Pipeline)
             result = text_recognition_pipeline(temp_image_path)
             
-            # hapus objek 'file' dari memori Flask
-            # dan paksa Python bersih-bersih (Garbage Collection)
-            # supaya Windows mau ngelepas file lock-nya.
+            # [FIX 2]: KURAS VRAM GPU SETELAH SELESAI MASAK!
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache() 
+            
+            # Hapus objek 'file' dari memori Flask
             del file
-            gc.collect() 
             
-            # 3. Hapus file sementara (Input Mentah)
-            if os.path.exists(temp_image_path):
-                os.remove(temp_image_path)
-            
-            # 4. Kembalikan hasil JSON
-            return jsonify(result)
-            
-        except Exception as e:
-            # Cleanup darurat kalau error
-            gc.collect() 
+            # 3. Hapus file sementara (Input Mentah) secara aman
             if os.path.exists(temp_image_path):
                 try:
                     os.remove(temp_image_path)
                 except:
                     pass 
+            
+            # 4. Kembalikan hasil JSON
+            return jsonify(result)
+            
+        except Exception as e:
+            if os.path.exists(temp_image_path):
+                try:
+                    os.remove(temp_image_path)
+                except:
+                    pass 
+            
+            # Kuras juga kalau kebetulan error di tengah jalan
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                
             return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == '__main__':

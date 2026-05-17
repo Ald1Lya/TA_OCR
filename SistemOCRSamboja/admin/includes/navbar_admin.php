@@ -2,7 +2,9 @@
   $current_page = basename($_SERVER['PHP_SELF']);
 ?>
 
+
 <aside class="w-64 bg-white shadow-lg flex flex-col fixed h-full">
+
 
   <div class="p-6 border-b border-gray-200">
     <div class="flex items-center gap-3 mb-2">

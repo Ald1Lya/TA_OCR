@@ -21,12 +21,13 @@ if (!$log_id) {
     die('Log ID tidak ditemukan');
 }
 
-// Ambil data log OCR
+// Ambil data log OCR (DITAMBAH RAW_TEXT)
 $sql  = "SELECT 
             nik_terdeteksi, 
             nik_final, 
             nama_file_sistem, 
-            status_proses 
+            status_proses,
+            raw_text 
         FROM log_ocr 
         WHERE log_id = ?";
 $stmt = mysqli_prepare($db, $sql);
@@ -51,6 +52,43 @@ $is_corrected = !empty($data['nik_final']);
 $nik_saat_ini = $is_corrected
     ? $data['nik_final']
     : ($data['nik_terdeteksi'] ?? 'TIDAK DITEMUKAN');
+
+// =====================================================================
+// BONGKAR JSON RAW TEXT & FILTER HANYA ANGKA & KEYWORD (BUANG NOISE)
+// =====================================================================
+$raw_text_json = json_decode($data['raw_text'] ?? '{}', true);
+$raw_list = $raw_text_json['semua_bounding_box'] ?? [];
+
+$daftar_keyword_ktp = ["PROVINSI", "KABUPATEN", "KOTA", "NIK", "NAM", "LAHIR", "ALAMAT", "AGAMA", "DARAH", "KAWIN", "PEKERJAAN", "WARGA", "BERLAKU", "KELURAHAN", "DESA", "RT", "RW", "GOL"];
+
+$list_angka_ui = [];
+$list_keyword_ui = [];
+
+foreach($raw_list as $item) {
+    $txt = htmlspecialchars($item['text'] ?? '');
+    $scr = (float)($item['score'] ?? 0);
+    $cek_teks = strtoupper(preg_replace('/\s+/', '', $txt));
+
+    // Cek apakah ada angka (Kandidat NIK / Tanggal)
+    $has_number = preg_match('/[0-9]/', $cek_teks);
+    
+    // Cek apakah ini bagian dari Keyword KTP
+    $is_keyword = false;
+    foreach($daftar_keyword_ktp as $kw) {
+        if (strpos($cek_teks, $kw) !== false) {
+            $is_keyword = true;
+            break;
+        }
+    }
+
+    // Pisahkan ke array masing-masing
+    if ($has_number) {
+        $list_angka_ui[] = ['text' => $txt, 'score' => $scr];
+    } elseif ($is_keyword) {
+        $list_keyword_ui[] = ['text' => $txt, 'score' => $scr];
+    }
+    // Jika tidak ada angka dan bukan keyword, SKIP (Dibuang dari UI biar nggak nyampah)
+}
 
 // Validasi gambar
 $nama_file            = $data['nama_file_sistem'] ?? '';
@@ -96,12 +134,30 @@ if ($stmt_audit) {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Koreksi Data - Sistem OCR KTP</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css" />
+    <script src="../assets/js/chart.min.js"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-    </style>
+    /* Deklarasi Font Inter */
+    @font-face {
+        font-family: 'Inter';
+        src: url('../assets/fonts/Inter-Regular.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+    }
+    @font-face {
+        font-family: 'Inter';
+        src: url('../assets/fonts/Inter-SemiBold.ttf') format('truetype');
+        font-weight: 600;
+        font-style: normal;
+    }
+    @font-face {
+        font-family: 'Inter';
+        src: url('../assets/fonts/static/Inter-Bold.ttf') format('truetype');
+        font-weight: 700;
+        font-style: normal;
+    }
+    body { font-family: 'Inter', sans-serif; }
+</style>
 </head>
 <body class="bg-gray-50 min-h-screen flex text-gray-800 antialiased">
 
@@ -114,18 +170,16 @@ if ($stmt_audit) {
                 <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Koreksi Data OCR</h1>
                 <p class="text-sm text-gray-500 mt-1">ID Dokumen: <span class="font-mono text-gray-700"><?php echo htmlspecialchars($log_id); ?></span></p>
             </div>
-      <div class="flex items-center gap-3">
-            <a href="hasilriwayat.php?id=<?php echo htmlspecialchars($log_id); ?>" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition shadow-sm">
-                <i data-feather="arrow-left" class="w-4 h-4 mr-2"></i> 
-                Kembali ke Hasil OCR
-            </a>
-
-            <a href="riwayat.php?id=<?php echo htmlspecialchars($log_id); ?>" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition shadow-sm">
-                <i data-feather="list" class="w-4 h-4 mr-2"></i> 
-                Kembali ke Riwayat Upload
-            </a>
-        </div>
-       
+            <div class="flex items-center gap-3">
+                <a href="hasilriwayat.php?id=<?php echo htmlspecialchars($log_id); ?>" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition shadow-sm">
+                    <i data-feather="arrow-left" class="w-4 h-4 mr-2"></i> 
+                    Kembali ke Hasil OCR
+                </a>
+                <a href="riwayat.php?id=<?php echo htmlspecialchars($log_id); ?>" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition shadow-sm">
+                    <i data-feather="list" class="w-4 h-4 mr-2"></i> 
+                    Kembali ke Riwayat Upload
+                </a>
+            </div>
         </div>
 
         <?php if($error): ?>
@@ -138,7 +192,8 @@ if ($stmt_audit) {
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
             <div class="lg:col-span-7 flex flex-col gap-6">
-                <div class="rounded-xl bg-white p-6 shadow-sm border border-gray-200 h-full flex flex-col">
+                <!-- PREVIEW GAMBAR -->
+                <div class="rounded-xl bg-white p-6 shadow-sm border border-gray-200 flex flex-col">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-base font-semibold text-gray-900">Preview Gambar KTP</h3>
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
@@ -157,10 +212,87 @@ if ($stmt_audit) {
                         <?php endif; ?>
                     </div>
                 </div>
+
+       <!-- PANEL CONTEKAN (FOKUS MURNI KANDIDAT NIK SAJA) -->
+                <div class="rounded-xl bg-white shadow-sm border border-gray-200 flex flex-col">
+                    <div class="border-b border-gray-100 px-6 py-4 flex items-center justify-between bg-gray-50/80 rounded-t-xl">
+                        <div class="flex items-center gap-2">
+                            <div class="bg-white p-1.5 rounded-md border border-gray-200 shadow-sm">
+                                <i data-feather="terminal" class="w-3.5 h-3.5 text-blue-600"></i>
+                            </div>
+                            <h3 class="text-sm font-semibold text-gray-800">Log Mentah OCR (Kandidat NIK)</h3>
+                        </div>
+                        <span class="text-[10px] font-medium text-gray-500 bg-white border border-gray-200 px-2.5 py-1 rounded-md shadow-sm flex items-center gap-1.5">
+                            Klik <i data-feather="copy" class="w-3 h-3 text-blue-500"></i> untuk menyalin
+                        </span>
+                    </div>
+
+                    <div class="h-[280px] overflow-y-auto p-4 flex flex-col gap-4">
+                        
+                        <!-- PINTU GERBANG PHP: SARING HANYA YANG MIRIP NIK (MINIMAL 12 DIGIT) -->
+                        <?php 
+                        $kandidat_nik_bersih = [];
+                        if (!empty($list_angka_ui)) {
+                            foreach($list_angka_ui as $item) {
+                                // Ekstrak hanya angkanya saja untuk dihitung
+                                $hanya_angka = preg_replace('/[^0-9]/', '', $item['text']);
+                                
+                                // Kalau jumlah angkanya minimal 12 digit, baru boleh masuk layar operator!
+                                if (strlen($hanya_angka) >= 12) {
+                                    $kandidat_nik_bersih[] = $item;
+                                }
+                            }
+                        }
+                        ?>
+
+                        <!-- BAGIAN KANDIDAT ANGKA (LIST LURUS KE BAWAH) -->
+                        <div>
+                            <?php if (empty($kandidat_nik_bersih)): ?>
+                                <p class="text-xs text-gray-400 italic bg-gray-50 p-4 rounded-lg border border-dashed border-gray-200 text-center">
+                                    Tidak ada kandidat NIK (minimal 12 digit) yang terbaca dari gambar.
+                                </p>
+                            <?php else: ?>
+                                <div class="flex flex-col gap-3">
+                                    <?php foreach($kandidat_nik_bersih as $item): ?>
+                                    <div class="flex items-center justify-between p-3.5 rounded-lg border border-gray-200 bg-white hover:border-blue-400 hover:shadow-md transition-all group">
+                                        
+                                        <!-- INFO RAW NIK & RAW SCORE -->
+                                        <div class="flex flex-col overflow-hidden mr-4">
+                                            <span class="text-[15px] font-mono font-bold text-gray-900 tracking-wider break-all mb-1" title="<?= htmlspecialchars($item['text']) ?>">
+                                                <?= htmlspecialchars($item['text']) ?>
+                                            </span>
+                                            
+                                            <div class="flex items-center gap-1.5">
+                                                <span class="bg-gray-100 text-gray-500 text-[9px] uppercase font-bold px-1.5 py-0.5 rounded">Skor Mentah</span>
+                                                <span class="text-xs font-bold <?= $item['score'] >= 0.7 ? 'text-green-600' : 'text-orange-500' ?>">
+                                                    <?= number_format($item['score'] * 100, 1) ?>%
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <!-- TOMBOL COPY ELEGAN -->
+                                        <button type="button" 
+                                                onclick="copyToForm('<?= addslashes($item['text']) ?>')" 
+                                                class="shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all focus:outline-none border border-blue-100 hover:border-blue-600"
+                                                title="Salin Teks ke Form">
+                                            <i data-feather="copy" class="w-4 h-4"></i>
+                                            <span class="text-[11px] font-bold uppercase tracking-wide hidden sm:inline-block">Salin</span>
+                                        </button>
+                                        
+                                    </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+
+                    </div>
+                </div>
+
+
             </div>
 
             <div class="lg:col-span-5 flex flex-col gap-6">
-                
+                <!-- FORM KOREKSI -->
                 <div class="rounded-xl bg-white p-6 shadow-sm border border-gray-200">
                     <div class="flex items-center justify-between mb-6">
                         <h3 class="text-base font-semibold text-gray-900">Data Ekstraksi</h3>
@@ -200,7 +332,7 @@ if ($stmt_audit) {
                                 <input type="text" id="nik-terkoreksi" name="nik_terkoreksi"
                                        value="<?php echo htmlspecialchars($old['nik_terkoreksi'] ?? $nik_saat_ini); ?>"
                                        placeholder="Masukkan 16 digit angka..."
-                                       class="block w-full pl-10 pr-3 py-2.5 rounded-lg border-2 border-gray-200 focus:border-green-500 focus:ring-0 text-gray-900 font-mono text-base shadow-sm transition-colors"
+                                       class="block w-full pl-10 pr-3 py-2.5 rounded-lg border-2 border-green-200 focus:border-green-500 focus:ring-0 text-gray-900 font-mono text-base shadow-sm transition-colors"
                                        required autofocus>
                             </div>
                         </div>
@@ -237,6 +369,7 @@ if ($stmt_audit) {
                     </form>
                 </div>
 
+                <!-- RIWAYAT REVISI -->
                 <div class="rounded-xl bg-white p-6 shadow-sm border border-gray-200">
                     <div class="flex items-center gap-2 mb-6">
                         <i data-feather="clock" class="w-5 h-5 text-gray-400"></i>
@@ -282,9 +415,33 @@ if ($stmt_audit) {
         </div>
     </main>
 
+
+  <script src="../assets/js/feather.min.js"></script>
+  <script src="../assets/js/sweetalert2.all.min.js"></script>
+  <script src="../assets/js/cropper.min.js"></script>
+
     <script>
         // Render feather icons
         feather.replace();
+
+        // FUNGSI JAVASCRIPT SAKTI BUAT AUTO-COPY KE FORM KOREKSI
+        function copyToForm(rawText) {
+            // Bersihkan teks, buang huruf, ambil angkanya aja
+            let angkaSaja = rawText.replace(/[^0-9]/g, '');
+            
+            if(angkaSaja !== "") {
+                let inputTarget = document.getElementById('nik-terkoreksi');
+                
+                // Masukin angkanya ke dalam input form
+                inputTarget.value = angkaSaja;
+                
+                // Kasih efek visual kelap-kelip hijau biar operator sadar angkanya udah masuk
+                inputTarget.classList.add('ring-2', 'ring-green-500', 'bg-green-50');
+                setTimeout(() => {
+                    inputTarget.classList.remove('ring-2', 'ring-green-500', 'bg-green-50');
+                }, 800);
+            }
+        }
     </script>
 </body>
 </html>

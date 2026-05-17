@@ -9,7 +9,6 @@ session_start();
 header('Content-Type: application/json');
 require_once 'config.php';
 
-
 function kirimRespon($data) {
     ob_clean();
     echo json_encode($data);
@@ -19,7 +18,7 @@ function kirimRespon($data) {
 
 // --- FUNGSI CEK SERVER NYALA/MATI ---
 function isPythonServerAlive($host = '127.0.0.1', $port = 5000) {
-    $connection = @fsockopen($host, $port, $errno, $errstr, 1); // Timeout 1 detik
+    $connection = @fsockopen($host, $port, $errno, $errstr, 1); 
     if (is_resource($connection)) {
         fclose($connection);
         return true;
@@ -34,12 +33,10 @@ if (!isset($_SESSION['user_id'])) {
 
 /* upload file */
 if (isset($_FILES['ktp_files'])) {
-
-    // [VALIDASI KRUSIAL] Cek Server Python Dulu!
     if (!isPythonServerAlive()) {
         kirimRespon([
             'success' => false, 
-            'message' => ' GAGAL: Server OCR sedang MATI. Silakan hubungi Admin untuk menyalakan sistem di Panel Kontrol.'
+            'message' => 'GAGAL: Server OCR sedang MATI. Silakan hubungi Admin.'
         ]);
     }
 
@@ -116,7 +113,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'trigger_ocr') {
     }
 
     $log_id = $_SESSION['current_log_id'];
-    session_write_close();
+    session_write_close(); // AMAN! Lepas Kunci Sesi.
 
     $sql = "SELECT nama_file_sistem, nama_file_asli FROM log_ocr WHERE log_id = ?";
     $stmt = mysqli_prepare($db, $sql);
@@ -126,7 +123,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'trigger_ocr') {
     $data = mysqli_fetch_assoc($res);
     mysqli_stmt_close($stmt);
 
-    if (!$data) exit;
+    if (!$data) kirimRespon(['success' => false]);
 
     $pathImg = realpath('../public/images/' . $data['nama_file_sistem']);
 
@@ -143,36 +140,57 @@ if (isset($_POST['action']) && $_POST['action'] === 'trigger_ocr') {
             CURLOPT_POST           => true,
             CURLOPT_POSTFIELDS     => ['file' => $cfile],
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => 600
+            CURLOPT_TIMEOUT        => 25 // [FIX 1] Maksimal 25 detik aja nunggu Python!
         ]);
 
         $response  = curl_exec($ch);
         $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curl_err  = curl_error($ch);
         curl_close($ch);
 
-        if ($http_code !== 200) {
-            throw new Exception('OCR error');
+        // Kalau timeout atau gagal, lempar exception
+        if ($http_code !== 200 || $response === false) {
+            throw new Exception("OCR Error/Timeout: " . $curl_err);
         }
 
         $json  = json_decode($response, true);
+        
+        // Cek kalau API Python ngasih pesan error di JSON-nya
+        if (isset($json['status']) && strpos($json['status'], 'failed') !== false) {
+             throw new Exception("Python merespon gagal: " . ($json['notes'] ?? 'Unknown Error'));
+        }
+
         $nik   = $json['nik'] ?? null;
         $score = $json['score'] ?? 0;
+        
+        $raw_text_array = $json['raw_text'] ?? []; 
+        $raw_text_json  = is_array($raw_text_array) ? json_encode($raw_text_array) : ''; 
+        
         $statusFinal = $nik ? 'pending_review' : 'failed';
 
         $sql = "UPDATE log_ocr 
-                SET nik_terdeteksi=?, skor_kepercayaan=?, status_proses=?
+                SET nik_terdeteksi=?, skor_kepercayaan=?, status_proses=?, raw_text=?
                 WHERE log_id=?";
 
         $stmt = mysqli_prepare($db, $sql);
-        mysqli_stmt_bind_param($stmt, "sdsi", $nik, $score, $statusFinal, $log_id);
+        mysqli_stmt_bind_param($stmt, "sdssi", $nik, $score, $statusFinal, $raw_text_json, $log_id);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
 
+        // [FIX 2] Kasih jawaban ke Frontend biar nggak bengong!
+        kirimRespon(['success' => true, 'status' => 'done']);
+
     } catch (Exception $e) {
+        $error_msg = $e->getMessage();
+        
+        // [FIX ERROR 500]: Kembalikan ke kodingan asli lu (Hapus kolom keterangan)
         $stmt = mysqli_prepare($db, "UPDATE log_ocr SET status_proses='failed' WHERE log_id=?");
         mysqli_stmt_bind_param($stmt, "i", $log_id);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
+        
+        // Kasih jawaban ke Frontend biar AJAX bisa jalan terus
+        kirimRespon(['success' => false, 'message' => 'Mesin Timeout/Kewalahan. Silakan coba lagi.']);
     }
 }
 ?>

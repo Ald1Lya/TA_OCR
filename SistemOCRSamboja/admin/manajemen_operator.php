@@ -53,13 +53,41 @@ function getInitials($name) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Manajemen Operator - OCR KTP</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/TUGASAKHIRCAPSTONE/assets/css/style.css" />
+    <script src="/TUGASAKHIRCAPSTONE/assets/js/chart.min.js"></script>
+
+    <style>
+        /* Deklarasi Font Inter Regular (400) */
+        @font-face {
+            font-family: 'Inter';
+            src: url('/TUGASAKHIRCAPSTONE/assets/fonts/Inter-Regular.ttf') format('truetype');
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        /* Deklarasi Font Inter SemiBold (600) */
+        @font-face {
+            font-family: 'Inter';
+            src: url('/TUGASAKHIRCAPSTONE/assets/fonts/Inter-SemiBold.ttf') format('truetype');
+            font-weight: 600;
+            font-style: normal;
+        }
+
+        /* Deklarasi Font Inter Bold (700) */
+        @font-face {
+            font-family: 'Inter';
+            src: url('/TUGASAKHIRCAPSTONE/assets/fonts/static/Inter-Bold.ttf') format('truetype');
+            font-weight: 700;
+            font-style: normal;
+        }
+
+        /* Terapkan ke body */
+        body { 
+            font-family: 'Inter', sans-serif; 
+        }
+    </style>
 
 <style> 
-    body { font-family: 'Inter', sans-serif; } 
     @keyframes highlightFade {
         0% { background-color: #dcfce7; } /* green-100 */
         100% { background-color: transparent; }
@@ -194,26 +222,26 @@ function getInitials($name) {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div class="md:col-span-2">
               <label class="block text-sm font-bold text-gray-700 mb-1.5">Nama Lengkap</label>
-              <input type="text" name="nama_lengkap" id="namaInput" class="block w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-green-600 outline-none transition-all" required>
+              <input type="text" name="nama_lengkap" id="namaInput" class="block w-full px-4 py-2.5 border border-gray-200 shadow-sm rounded-lg focus:border-green-600 outline-none transition-all" required>
             </div>
             <div>
               <label class="block text-sm font-bold text-gray-700 mb-1.5">Username</label>
-              <input type="text" name="username" id="usernameInput" class="block w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-green-600 outline-none transition-all" required>
+              <input type="text" name="username" id="usernameInput" class="block w-full px-4 py-2.5 border border-gray-200 shadow-sm rounded-lg focus:border-green-600 outline-none transition-all" required>
             </div>
             <div>
               <label class="block text-sm font-bold text-gray-700 mb-1.5" id="passwordLabel">Password</label>
-              <input type="password" name="password" id="passwordInput" class="block w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-green-600 outline-none transition-all">
+              <input type="password" name="password" id="passwordInput" class="block w-full px-4 py-2.5 border border-gray-200 shadow-sm rounded-lg focus:border-green-600 outline-none transition-all">
             </div>
             <div>
               <label class="block text-sm font-bold text-gray-700 mb-1.5">Role</label>
-              <select name="role" id="roleSelect" class="block w-full px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:border-green-600 outline-none bg-white font-medium">
+              <select name="role" id="roleSelect" class="block w-full px-3 py-2.5 border border-gray-200 shadow-sm rounded-lg focus:border-green-600 outline-none bg-white font-medium transition-all">
                 <option value="operator">Operator</option>
                 <option value="admin">Administrator</option>
               </select>
             </div>
             <div>
               <label class="block text-sm font-bold text-gray-700 mb-1.5">Status</label>
-              <select name="status" id="statusSelect" class="block w-full px-3 py-2.5 border-2 border-gray-200 rounded-lg focus:border-green-600 outline-none bg-white font-medium">
+              <select name="status" id="statusSelect" class="block w-full px-3 py-2.5 border border-gray-200 shadow-sm rounded-lg focus:border-green-600 outline-none bg-white font-medium transition-all">
                 <option value="Aktif">Aktif</option>
                 <option value="Nonaktif">Nonaktif</option>
               </select>
@@ -221,7 +249,7 @@ function getInitials($name) {
         </div>
       </div>
       <div class="bg-gray-100 px-6 py-4 flex items-center justify-end gap-3 border-t border-gray-200">
-        <button type="button" id="closeModal" class="px-5 py-2.5 text-sm font-bold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Batal</button>
+        <button type="button" id="closeModal" class="px-5 py-2.5 text-sm font-bold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm">Batal</button>
         <button type="submit" class="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-green-600 rounded-lg hover:bg-green-700 transition-all shadow-md">
           <i data-feather="save" class="w-4 h-4"></i> Simpan
         </button>
@@ -230,7 +258,8 @@ function getInitials($name) {
   </div>
 </div>
 
-<script>
+<script src="/TUGASAKHIRCAPSTONE/assets/js/feather.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> <script>
 document.addEventListener('DOMContentLoaded', () => {
     feather.replace();
 
@@ -242,11 +271,9 @@ document.addEventListener('DOMContentLoaded', () => {
         timerProgressBar: true
     });
 
-   
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('success')) {
         Toast.fire({ icon: 'success', title: urlParams.get('success') });
-        // Bersihkan URL tanpa refresh
         window.history.replaceState({}, document.title, window.location.pathname);
     }
     if (urlParams.has('error')) {
@@ -306,7 +333,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     });
 
-
     document.querySelectorAll('.btn-delete').forEach(btn => {
         btn.onclick = function() {
             const form = this.closest('form');
@@ -315,8 +341,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 text: "Data yang dihapus tidak bisa dikembalikan!",
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#16a34a', // green-600
-                cancelButtonColor: '#dc2626', // red-600
+                confirmButtonColor: '#16a34a',
+                cancelButtonColor: '#dc2626',
                 confirmButtonText: 'Ya, Hapus!',
                 cancelButtonText: 'Batal',
                 reverseButtons: true

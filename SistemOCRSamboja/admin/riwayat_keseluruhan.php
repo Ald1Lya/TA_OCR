@@ -115,10 +115,32 @@ function badgeAdminStatus($status)
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Riwayat Keseluruhan - Admin OCR</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style> body { font-family: 'Inter', sans-serif; } </style>
+
+    <link rel="stylesheet" href="/TUGASAKHIRCAPSTONE/assets/css/style.css" />
+
+    <style>
+        @font-face {
+            font-family: 'Inter';
+            src: url('/TUGASAKHIRCAPSTONE/assets/fonts/Inter-Regular.ttf') format('truetype');
+            font-weight: 400;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Inter';
+            src: url('/TUGASAKHIRCAPSTONE/assets/fonts/Inter-SemiBold.ttf') format('truetype');
+            font-weight: 600;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Inter';
+            src: url('/TUGASAKHIRCAPSTONE/assets/fonts/static/Inter-Bold.ttf') format('truetype');
+            font-weight: 700;
+            font-style: normal;
+        }
+        body { 
+            font-family: 'Inter', sans-serif; 
+        }
+    </style>
 </head>
 <body class="bg-gray-50 min-h-screen flex text-gray-800 antialiased">
 
@@ -136,7 +158,7 @@ function badgeAdminStatus($status)
 
         <div>
             <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Pilih Operator</label>
-            <select name="operator_id" class="w-full border-2 border-gray-200 rounded-lg py-2.5 px-3 focus:border-green-500 outline-none text-sm font-medium transition bg-white cursor-pointer">
+            <select name="operator_id" class="w-full border-2 border-gray-200 rounded-lg py-2.5 px-3 focus:border-green-500 outline-none text-sm font-medium transition bg-white cursor-pointer shadow-sm">
                 <option value="">-- Semua Operator --</option>
                 <?php foreach($listOperator as $op): ?>
                     <option value="<?= $op['id'] ?>" <?= $filterOp == $op['id'] ? 'selected' : '' ?>><?= htmlspecialchars($op['nama_lengkap']) ?></option>
@@ -146,7 +168,7 @@ function badgeAdminStatus($status)
 
         <div>
             <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Status Scan</label>
-            <select name="status" class="w-full border-2 border-gray-200 rounded-lg py-2.5 px-3 focus:border-green-500 outline-none text-sm font-medium transition bg-white cursor-pointer">
+            <select name="status" class="w-full border-2 border-gray-200 rounded-lg py-2.5 px-3 focus:border-green-500 outline-none text-sm font-medium transition bg-white cursor-pointer shadow-sm">
                 <option value="">-- Semua Status --</option>
                 <option value="finalized" <?= $filterStat === 'finalized' ? 'selected' : '' ?>>Sukses</option>
                 <option value="pending_review" <?= $filterStat === 'pending_review' ? 'selected' : '' ?>>Perlu Koreksi</option>
@@ -158,7 +180,7 @@ function badgeAdminStatus($status)
             <button type="submit" class="flex-1 bg-gray-900 hover:bg-gray-800 text-white font-bold py-2.5 rounded-lg text-sm transition shadow-sm">
                 Terapkan Filter
             </button>
-            <a href="riwayat_keseluruhan.php" class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2.5 px-4 rounded-lg text-sm transition flex items-center justify-center border border-gray-300" title="Reset">
+            <a href="riwayat_keseluruhan.php" class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2.5 px-4 rounded-lg text-sm transition flex items-center justify-center border border-gray-300 shadow-sm" title="Reset">
                 <i data-feather="refresh-cw" class="w-4 h-4"></i>
             </a>
         </div>
@@ -224,7 +246,7 @@ function badgeAdminStatus($status)
               </td>
               <td class="px-6 py-4">
                   <div class="flex items-center gap-2">
-                      <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold uppercase">
+                      <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold uppercase border border-indigo-200 shadow-sm">
                           <?= substr($row['operator'] ?? 'S', 0, 1) ?>
                       </div>
                       <span class="text-sm font-bold text-gray-800"><?= htmlspecialchars($row['operator'] ?? 'Sistem') ?></span>
@@ -235,7 +257,7 @@ function badgeAdminStatus($status)
               </td>
               <td class="px-6 py-4">
                 <?php if($row['nik']): ?>
-                    <span class="font-mono text-sm text-gray-900 bg-gray-100 px-2 py-1 rounded border border-gray-200"><?= htmlspecialchars($row['nik']) ?></span>
+                    <span class="font-mono text-sm text-gray-900 bg-gray-100 px-2 py-1 rounded border border-gray-200 shadow-sm"><?= htmlspecialchars($row['nik']) ?></span>
                 <?php else: ?>
                     <span class="text-xs text-red-500 font-medium">Kosong</span>
                 <?php endif; ?>
@@ -257,8 +279,6 @@ function badgeAdminStatus($status)
        <span class="text-sm text-gray-500 font-medium">Halaman <?= $page ?> dari <?= $totalPages ?></span>
        <div class="flex gap-2">
           <?php
-            // PERBAIKAN DI SINI:
-            // Pastikan menggunakan variabel $filterOp dan $filterStat yang sudah didefinisikan di atas
             $qs = "&operator_id=".urlencode($filterOp)."&status=".urlencode($filterStat);
           ?>
           <a href="?page=<?= max(1, $page - 1) ?><?= $qs ?>" class="px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm font-bold text-gray-700 hover:bg-gray-100 <?= $page <= 1 ? 'opacity-50 pointer-events-none' : '' ?>">Prev</a>
@@ -269,6 +289,11 @@ function badgeAdminStatus($status)
 
 </main>
 
-<script>feather.replace();</script>
+<script src="/TUGASAKHIRCAPSTONE/assets/js/feather.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        feather.replace();
+    });
+</script>
 </body>
 </html>

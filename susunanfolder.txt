@@ -1,71 +1,128 @@
 TugasAkhirCapstone/
-│
-├── SistemOCRSamboja/            <-- ROOT PROJECT
-│   │
-│   ├── admin/                   <-- Halaman Admin
-│   │   ├── includes/
-│   │   │   └── navbar.php
-│   │   ├── dashboard_admin.php
-│   │   ├── manajemen_operator.php
-│   │   ├── riwayat_keseluruhan.php
-│   │   └── kontrol_sistem.php
-│   │
-│   ├── includes/              
-│   │   └── navbar.php
-│   │
-│   ├── proses/                
-│   │   ├── config.php
-│   │   ├── proses_excel.php    
-│   │   ├── proses_hapus_data.php 
-│   │   ├── proses_koreksi.php
-│   │   └── proses_login_dan_register.php
-│   │   └── proses_logout.php
-│   │   ├── proses_pdf.php 
-│   │   └── proses_pengaturan_pengguna.php
-│   │   ├── proses_simpan.php
-│   │   ├── proses_upload.php    
-│   │
-│   ├── public/                  <-- Penyimpanan File
-│   │   └── images/              <-- (KTP masuk sini)
-│   │
-│   ├── PYTHON_OCR/              <-- Engine OCR
-│   │   ├── core/                
-│   │   │   ├── filters.py
-│   │   │   ├── ocr_engine.py
-│   │   │   └── ocr_service.py   (pipeline OCR)
-│   │   │   ├── optimizer.py     
-│   │   │   ├── preprocessing.py
-│   │   ├── temp_uploads/        <-- (melihat hasil raw OCR)
-│   │   ├── test/
-|   |   |   └── anomali/
-|   |   |   └── normal/
-│   │   ├── app.py               (Server Flask)
-│   │   ├── ocr_log.txt
-│   │   └── start_ocr.bat
-│   │
-│   ├── dashboard.php            <-- Halaman oprator
-│   ├── hasilocr.php
-│   ├── hasilriwayat.php              
-│   ├── koreksi.php       
-│   ├── prosesocr.php
-│   ├── riwayat.php
-│   ├── upload.php
-├── index.php                    <-- Halaman Login Operator dan Admin serta register untuk Admin Saja
-├── register.php
+├─ .git/
+├─ assetimage/
+├─ assets/
+│  ├─ css/
+│  │  ├─ cropper.min.css
+│  │  └─ style.css
+│  ├─ fonts/
+│  │  ├─ Inter-Italic-VariableFont_opsz,wght.ttf
+│  │  ├─ Inter-VariableFont_opsz,wght.ttf
+│  │  ├─ OFL.txt
+│  │  ├─ README.txt
+│  │  └─ static/
+│  │     ├─ Inter_18pt-Black.ttf
+│  │     ├─ Inter_18pt-BlackItalic.ttf
+│  │     ├─ ...
+│  │     └─ Inter_28pt-ThinItalic.ttf
+│  └─ js/
+│     ├─ chart.min.js
+│     ├─ cropper.min.js
+│     └─ sweetalert2.all.min.js
+├─ composer.json
+├─ composer.lock
+├─ node_modules/
+├─ package-lock.json
+├─ package.json
+├─ SistemOCRSamboja/
+│  ├─ admin/
+│  │  ├─ dashboard_admin.php
+│  │  ├─ kontrol_sistem.php
+│  │  ├─ manajemen_operator.php
+│  │  ├─ riwayat_keseluruhan.php
+│  │  └─ includes/
+│  │     ├─ logo.png
+│  │     └─ navbar_admin.php
+│  ├─ dashboard.php
+│  ├─ hasilocr.php
+│  ├─ hasilriwayat.php
+│  ├─ includes/
+│  │  └─ navbar.php
+│  ├─ index.php
+│  ├─ koreksi.php
+│  ├─ proses/
+│  │  ├─ config.php
+│  │  ├─ proses_excel.php
+│  │  ├─ proses_hapus_data.php
+│  │  ├─ proses_koreksi.php
+│  │  ├─ proses_login_dan_register.php
+│  │  ├─ proses_logout.php
+│  │  ├─ proses_pdf.php
+│  │  ├─ proses_pengaturan_pengguna.php
+│  │  ├─ proses_simpan.php
+│  │  └─ proses_upload.php
+│  ├─ prosesocr.php
+│  ├─ public/
+│  │  └─ images/
+│  │     ├─ ktp_69d90f51985ac4.98007469.jpeg
+│  │     ├─ ktp_69d90f9121adb5.66245934.jpg
+│  │     └─ ...
+│  ├─ PYTHON_OCR/
+│  │  ├─ app.py
+│  │  ├─ ocr_log.txt
+│  │  ├─ start_ocr.bat
+│  │  ├─ core/
+│  │  │  ├─ filters.py
+│  │  │  ├─ ocr_engine.py
+│  │  │  ├─ ocr_service.py
+│  │  │  ├─ optimizer.py
+│  │  │  ├─ preprocessing.py
+│  │  │  └─ __pycache__/
+│  │  ├─ temp_uploads/
+│  │  └─ test/
+│  │     ├─ anomali/
+│  │     └─ normal/
+│  ├─ register.php
+│  ├─ riwayat.php
+│  └─ upload.php
+├─ src/
+│  └─ input.css
+├─ susunanfolder.txt
+└─ vendor/
 
-Penjelasan:
------------
-- SistemOCRSamboja/:
-  Aplikasi web (PHP) untuk upload, review, koreksi, dan manajemen data KTP. File diupload ke public/images, lalu dikirim ke backend Python lewat proses_upload.php.
+═══════════════════════════════════════════════════════════════════════════════
 
-- PYTHON_OCR/: 
-  Backend API (Flask + EasyOCR + OpenCV) menerima file dari PHP, memproses pipeline OCR, dan mengembalikan hasil ke web. Semua proses estraksi ada di core/.
+📋 PENJELASAN STRUKTUR:
+═══════════════════════════════════════════════════════════════════════════════
 
-cara play di powershell
-cd C:\laragon\www\TugasAkhirCapstone\SistemOCRSamboja\PYTHON_OCR
-python app.py
+🔹 SistemOCRSamboja/ (ROOT PROJECT)
+   ├─ Aplikasi web utama (PHP) untuk upload, review, koreksi, dan manajemen KTP
+   ├─ Komunikasi dengan Python backend via REST API (proses_upload.php)
+   └─ File KTP diupload ke public/images/
 
-cara play di bash
-cd /c/laragon/www/TugasAkhirCapstone/SistemOCRSamboja/PYTHON_OCR
-python app.py
+🔹 admin/ (Panel Administrator)
+   ├─ Dashboard Admin: Mengelola keseluruhan sistem
+   ├─ Manajemen Operator: CRUD operator/user
+   ├─ Riwayat Keseluruhan: Log semua aktivitas sistem
+   └─ Kontrol Sistem: Setting dan konfigurasi
+
+🔹 proses/ (Backend Logic)
+   ├─ Semua proses PHP yang menangani logika bisnis
+   ├─ Komunikasi dengan database dan Python OCR API
+   └─ Handling file upload, export, dan data manipulation
+
+🔹 PYTHON_OCR/ (Backend OCR Engine)
+   ├─ Server Flask yang menerima request dari PHP
+   ├─ Pipeline OCR: Input → Preprocessing → OCR → Output
+   ├─ Menggunakan EasyOCR + OpenCV untuk ekstraksi text
+   └─ Semua proses ekstraksi ada di folder core/
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🚀 CARA MENJALANKAN:
+═══════════════════════════════════════════════════════════════════════════════
+
+Untuk Windows (PowerShell):
+  cd C:\laragon\www\TugasAkhirCapstone\SistemOCRSamboja\PYTHON_OCR
+  python app.py
+
+Untuk Linux/Mac/WSL (Bash):
+  cd /c/laragon/www/TugasAkhirCapstone/SistemOCRSamboja/PYTHON_OCR
+  python app.py
+
+PHP Web:
+  - Akses via Laragon: http://localhost/TugasAkhirCapstone/SistemOCRSamboja/
+  - Login sebagai Operator atau Admin di index.php
+
+═══════════════════════════════════════════════════════════════════════════════
 

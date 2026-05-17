@@ -45,7 +45,6 @@ if (isset($_GET['ajax_status'])) {
     exit;
 }
 
-
 $status = isOcrRunning('127.0.0.1', $port_flask);
 
 // LOGIKA TOMBOL 
@@ -78,14 +77,41 @@ if (isset($_POST['action'])) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kontrol Server OCR</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<style> 
-    body { font-family: 'Inter', sans-serif; } 
-    .font-mono { font-family: 'JetBrains Mono', monospace; }
-</style>
+
+    <link rel="stylesheet" href="/TUGASAKHIRCAPSTONE/assets/css/style.css" />
+
+    <style>
+        /* Font Inter */
+        @font-face {
+            font-family: 'Inter';
+            src: url('/TUGASAKHIRCAPSTONE/assets/fonts/Inter-Regular.ttf') format('truetype');
+            font-weight: 400;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Inter';
+            src: url('/TUGASAKHIRCAPSTONE/assets/fonts/Inter-SemiBold.ttf') format('truetype');
+            font-weight: 600;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Inter';
+            src: url('/TUGASAKHIRCAPSTONE/assets/fonts/static/Inter-Bold.ttf') format('truetype');
+            font-weight: 700;
+            font-style: normal;
+        }
+        
+        /* Font JetBrains Mono (Terminal look) */
+        @font-face {
+            font-family: 'JetBrains Mono';
+            src: url('/TUGASAKHIRCAPSTONE/assets/fonts/JetBrainsMono-Regular.ttf') format('truetype');
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        body { font-family: 'Inter', sans-serif; } 
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+    </style>
 </head>
 <body class="bg-gray-50 min-h-screen flex text-gray-800 antialiased">
 
@@ -140,7 +166,7 @@ if (isset($_POST['action'])) {
               <input type="hidden" name="action" id="actionInput">
               
               <div id="btn-container">
-                 <button type="button" disabled class="w-full py-5 bg-gray-100 text-gray-400 rounded-xl font-bold flex items-center justify-center gap-3 cursor-not-allowed">
+                 <button type="button" disabled class="w-full py-5 bg-gray-100 text-gray-400 rounded-xl font-bold flex items-center justify-center gap-3 cursor-not-allowed border border-gray-200 shadow-sm">
                       Loading...
                   </button>
               </div>
@@ -156,6 +182,9 @@ if (isset($_POST['action'])) {
 
   </div>
 </main>
+
+<script src="/TUGASAKHIRCAPSTONE/assets/js/feather.min.js"></script>
+<script src="/TUGASAKHIRCAPSTONE/assets/js/sweetalert2.all.min.js"></script>
 
 <script>
     feather.replace();
@@ -190,11 +219,11 @@ if (isset($_POST['action'])) {
                 if(isRunning) {
                     statusContainer.innerHTML = `
                         <div class="relative z-10">
-                            <div class="w-24 h-24 rounded-full bg-green-100 flex items-center justify-center mb-4 mx-auto shadow-lg shadow-green-50 animate-pulse">
+                            <div class="w-24 h-24 rounded-full bg-green-100 border border-green-200 flex items-center justify-center mb-4 mx-auto shadow-lg shadow-green-50 animate-pulse">
                                 <i data-feather="cpu" class="w-10 h-10 text-green-600"></i>
                             </div>
                             <h2 class="text-3xl font-black text-gray-900 mb-1 tracking-tight">ONLINE</h2>
-                            <span class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-green-100 text-green-700 text-[10px] font-bold uppercase tracking-wider">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-green-100 text-green-700 border border-green-200 text-[10px] font-bold uppercase tracking-wider">
                                 Active
                             </span>
                             <p class="text-gray-400 text-xs mt-3">Mesin OCR siap bekerja.</p>
@@ -203,11 +232,11 @@ if (isset($_POST['action'])) {
                 } else {
                     statusContainer.innerHTML = `
                         <div class="relative z-10">
-                            <div class="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-4 mx-auto">
+                            <div class="w-24 h-24 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center mb-4 mx-auto shadow-sm">
                                 <i data-feather="power" class="w-10 h-10 text-gray-400"></i>
                             </div>
                             <h2 class="text-3xl font-black text-gray-400 mb-1 tracking-tight">OFFLINE</h2>
-                            <span class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-gray-100 text-gray-500 text-[10px] font-bold uppercase tracking-wider">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200 text-[10px] font-bold uppercase tracking-wider">
                                 Stopped
                             </span>
                             <p class="text-gray-400 text-xs mt-3">Layanan dimatikan.</p>
@@ -220,20 +249,20 @@ if (isset($_POST['action'])) {
                 const btnContainer = document.getElementById('btn-container');
                 if(isRunning) {
                     btnContainer.innerHTML = `
-                        <button type="button" onclick="confirmStop()" class="w-full py-5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-lg shadow-xl shadow-red-50 transition-all transform hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-3">
+                        <button type="button" onclick="confirmStop()" class="w-full py-5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-lg shadow-md transition-all transform hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-3 border border-red-700">
                              <div class="flex items-center justify-center"><i data-feather="square" class="w-5 h-5 mr-2"></i> MATIKAN SISTEM</div>
                         </button>
-                        <div class="p-3 bg-gray-50 rounded-lg border border-gray-100 flex gap-2 mt-4 items-center">
+                        <div class="p-3 bg-gray-50 rounded-lg border border-gray-200 shadow-sm flex gap-2 mt-4 items-center">
                             <i data-feather="info" class="text-gray-400 w-4 h-4 flex-shrink-0"></i>
                             <p class="text-[10px] text-gray-500">Matikan jika tidak digunakan.</p>
                         </div>
                     `;
                 } else {
                     btnContainer.innerHTML = `
-                        <button type="button" onclick="confirmStart()" class="w-full py-5 bg-gray-900 hover:bg-black text-white rounded-xl font-bold text-lg shadow-xl shadow-gray-200 transition-all transform hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-3">
+                        <button type="button" onclick="confirmStart()" class="w-full py-5 bg-gray-900 hover:bg-black text-white rounded-xl font-bold text-lg shadow-md transition-all transform hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-3 border border-gray-900">
                             <div class="flex items-center justify-center"><i data-feather="play" class="w-5 h-5 mr-2"></i> NYALAKAN SISTEM</div>
                         </button>
-                        <div class="p-3 bg-yellow-50 rounded-lg border border-yellow-100 flex gap-2 mt-4 items-center">
+                        <div class="p-3 bg-yellow-50 rounded-lg border border-yellow-200 shadow-sm flex gap-2 mt-4 items-center">
                             <i data-feather="alert-circle" class="text-yellow-600 w-4 h-4 flex-shrink-0"></i>
                             <p class="text-[10px] text-yellow-700">Booting perlu waktu 2-3 detik.</p>
                         </div>

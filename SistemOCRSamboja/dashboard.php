@@ -151,9 +151,40 @@ function getStatusBadge($status) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Operator - OCR KTP</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap'); body { font-family: 'Inter', sans-serif; }</style>
+    <link rel="stylesheet" href="../assets/css/style.css" />
+
+    <script src="../assets/js/chart.min.js"></script>
+
+    <style>
+        /* Deklarasi Font Inter Regular (400) */
+        @font-face {
+            font-family: 'Inter';
+            src: url('../assets/fonts/Inter-Regular.ttf') format('truetype');
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        /* Deklarasi Font Inter SemiBold (600) */
+        @font-face {
+            font-family: 'Inter';
+            src: url('../assets/fonts/Inter-SemiBold.ttf') format('truetype');
+            font-weight: 600;
+            font-style: normal;
+        }
+
+        /* Deklarasi Font Inter Bold (700) */
+        @font-face {
+            font-family: 'Inter';
+            src: url('../assets/fonts/static/Inter-Bold.ttf') format('truetype');
+            font-weight: 700;
+            font-style: normal;
+        }
+
+        /* Terapkan ke body */
+        body { 
+            font-family: 'Inter', sans-serif; 
+        }
+    </style>
 </head>
 <body class="bg-gray-50 min-h-screen flex text-gray-800 antialiased">
 

@@ -90,13 +90,39 @@ function statusBadge($status)
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard Admin - OCR KTP</title>
 
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <link rel="stylesheet" href="/TUGASAKHIRCAPSTONE/assets/css/style.css" />
+    <script src="/TUGASAKHIRCAPSTONE/assets/js/chart.min.js"></script>
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-    body { font-family: 'Inter', sans-serif; }
-</style>
+    <style>
+        /* Deklarasi Font Inter Regular (400) */
+        @font-face {
+            font-family: 'Inter';
+            src: url('/TUGASAKHIRCAPSTONE/assets/fonts/Inter-Regular.ttf') format('truetype');
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        /* Deklarasi Font Inter SemiBold (600) */
+        @font-face {
+            font-family: 'Inter';
+            src: url('/TUGASAKHIRCAPSTONE/assets/fonts/Inter-SemiBold.ttf') format('truetype');
+            font-weight: 600;
+            font-style: normal;
+        }
+
+        /* Deklarasi Font Inter Bold (700) */
+        @font-face {
+            font-family: 'Inter';
+            src: url('/TUGASAKHIRCAPSTONE/assets/fonts/static/Inter-Bold.ttf') format('truetype');
+            font-weight: 700;
+            font-style: normal;
+        }
+
+        /* Terapkan ke body */
+        body { 
+            font-family: 'Inter', sans-serif; 
+        }
+    </style>
 </head>
 
 <body class="bg-gray-50 min-h-screen flex text-gray-800">
@@ -105,7 +131,7 @@ function statusBadge($status)
 
 <main class="flex-1 ml-64 p-8">
 
-    <div class="bg-white p-6 rounded-xl border shadow-sm mb-8">
+    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mb-8">
         <h1 class="text-2xl font-bold text-gray-900">Dashboard Administrator</h1>
         <p class="text-sm text-gray-500 mt-1 flex items-center gap-2">
             <i data-feather="monitor" class="w-4 h-4 text-green-600"></i>
@@ -117,7 +143,7 @@ function statusBadge($status)
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         
-        <a href="manajemen_operator.php" class="bg-white p-6 rounded-xl border shadow-sm flex items-center justify-between border-l-4 border-green-500 hover:shadow-md hover:-translate-y-1 hover:border-green-600 transition-all cursor-pointer group">
+        <a href="manajemen_operator.php" class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between border-l-4 border-l-green-500 hover:shadow-md hover:-translate-y-1 hover:border-green-500 transition-all cursor-pointer group">
             <div class="flex gap-4 items-center">
                 <div class="p-4 bg-green-50 rounded-lg text-green-600 group-hover:bg-green-100 transition-colors">
                     <i data-feather="users"></i>
@@ -132,7 +158,7 @@ function statusBadge($status)
             </div>
         </a>
 
-        <a href="riwayat_keseluruhan.php" class="bg-white p-6 rounded-xl border shadow-sm flex items-center justify-between border-l-4 border-blue-500 hover:shadow-md hover:-translate-y-1 hover:border-blue-600 transition-all cursor-pointer group">
+        <a href="riwayat_keseluruhan.php" class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between border-l-4 border-l-blue-500 hover:shadow-md hover:-translate-y-1 hover:border-blue-500 transition-all cursor-pointer group">
             <div class="flex gap-4 items-center">
                 <div class="p-4 bg-blue-50 rounded-lg text-blue-600 group-hover:bg-blue-100 transition-colors">
                     <i data-feather="file-text"></i>
@@ -150,7 +176,7 @@ function statusBadge($status)
             </div>
         </a>
 
-        <a href="kontrol_sistem.php" class="bg-white p-6 rounded-xl border shadow-sm flex items-center justify-between border-l-4 border-purple-500 hover:shadow-md hover:-translate-y-1 hover:border-purple-600 transition-all cursor-pointer group">
+        <a href="kontrol_sistem.php" class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between border-l-4 border-l-purple-500 hover:shadow-md hover:-translate-y-1 hover:border-purple-500 transition-all cursor-pointer group">
             <div class="flex gap-4 items-center">
                 <div class="p-4 bg-purple-50 rounded-lg text-purple-600 group-hover:bg-purple-100 transition-colors">
                     <i data-feather="server"></i>
@@ -167,8 +193,8 @@ function statusBadge($status)
 
     </div>
 
-    <div class="bg-white rounded-xl border shadow-md overflow-hidden">
-        <div class="px-6 py-4 border-b flex justify-between items-center">
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h2 class="text-lg font-bold">Aktivitas Scan Terbaru</h2>
             <a href="riwayat_keseluruhan.php" class="text-sm font-bold text-green-600 hover:underline">
                 Lihat Semua Riwayat →
@@ -185,15 +211,14 @@ function statusBadge($status)
                     <th class="px-6 py-4 text-right">Status</th>
                 </tr>
             </thead>
-            <tbody class="divide-y">
-                <?php if (!$aktivitas): ?>
+            <tbody class="divide-y divide-gray-100"> <?php if (!$aktivitas): ?>
                     <tr>
                         <td colspan="5" class="px-6 py-8 text-center text-gray-500">
                             Belum ada aktivitas scan dalam waktu dekat.
                         </td>
                     </tr>
                 <?php else: foreach ($aktivitas as $row): ?>
-                    <tr class="hover:bg-green-50/30">
+                    <tr class="hover:bg-green-50/30 transition-colors">
                         <td class="px-6 py-4 text-sm text-gray-600">
                             <?= date('d M Y, H:i', strtotime($row['waktu_upload'])) ?> WIB
                         </td>
@@ -223,9 +248,11 @@ function statusBadge($status)
 
 </main>
 
+<script src="/TUGASAKHIRCAPSTONE/assets/js/feather.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     feather.replace();
 });
 </script>
 </body>
+</html>

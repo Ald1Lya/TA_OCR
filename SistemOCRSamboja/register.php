@@ -5,7 +5,38 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Registrasi Admin - Sistem OCR KTP</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+    <script src="../assets/js/chart.min.js"></script>
+    <style>
+    /* Deklarasi Font Inter Regular (400) */
+    @font-face {
+        font-family: 'Inter';
+        src: url('../assets/fonts/Inter-Regular.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+    }
+
+    /* Deklarasi Font Inter SemiBold (600) */
+    @font-face {
+        font-family: 'Inter';
+        src: url('../assets/fonts/Inter-SemiBold.ttf') format('truetype');
+        font-weight: 600;
+        font-style: normal;
+    }
+
+    /* Deklarasi Font Inter Bold (700) */
+    @font-face {
+        font-family: 'Inter';
+        src: url('../assets/fonts/static/Inter-Bold.ttf') format('truetype');
+        font-weight: 700;
+        font-style: normal;
+    }
+
+    /* Terapkan ke body */
+    body { 
+        font-family: 'Inter', sans-serif; 
+    }
+</style>
 </head>
 <body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-600 to-green-500 p-4">
   <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 animate-fade-in">

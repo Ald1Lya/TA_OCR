@@ -135,11 +135,38 @@ function getStatusBadge($status) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Riwayat OCR KTP</title>
   
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link rel="stylesheet" href="../assets/css/style.css" />
+    <script src="../assets/js/chart.min.js"></script>
+    <style>
+    /* Deklarasi Font Inter Regular (400) */
+    @font-face {
+        font-family: 'Inter';
+        src: url('../assets/fonts/Inter-Regular.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+    }
+
+    /* Deklarasi Font Inter SemiBold (600) */
+    @font-face {
+        font-family: 'Inter';
+        src: url('../assets/fonts/Inter-SemiBold.ttf') format('truetype');
+        font-weight: 600;
+        font-style: normal;
+    }
+
+    /* Deklarasi Font Inter Bold (700) */
+    @font-face {
+        font-family: 'Inter';
+        src: url('../assets/fonts/static/Inter-Bold.ttf') format('truetype');
+        font-weight: 700;
+        font-style: normal;
+    }
+
+    /* Terapkan ke body */
+    body { 
+        font-family: 'Inter', sans-serif; 
+    }
+</style>
 
   <style>
     body { font-family: 'Inter', sans-serif; }
@@ -313,7 +340,7 @@ function getStatusBadge($status) {
                           <span class="text-gray-500 mr-2">Akurasi:</span>
                           <?php 
                             $akurasi = $data['akurasi'] * 100;
-                            $colorClass = $akurasi > 90 ? 'text-green-600' : ($akurasi > 70 ? 'text-yellow-600' : 'text-red-600');
+                            $colorClass = $akurasi > 90 ? 'text-green-600' : ($akurasi > 50 ? 'text-yellow-600' : 'text-red-600');
                           ?>
                           <span class="font-bold <?= $colorClass ?>"><?= number_format($akurasi, 1) ?>%</span>
                        </div>
@@ -357,6 +384,11 @@ function getStatusBadge($status) {
       </div>
     </div>
   </main>
+
+
+  <script src="../assets/js/feather.min.js"></script>
+  <script src="../assets/js/sweetalert2.all.min.js"></script>
+  <script src="../assets/js/cropper.min.js"></script>
 
   <script>
     feather.replace();
