@@ -1,29 +1,28 @@
 <?php
 session_start();
 
-// Validasi login
 if (!isset($_SESSION['user_id'])) {
     header('Location: index.php');
     exit;
 }
 
-// Redirect admin
 if (strtolower($_SESSION['role']) === 'admin') {
     header('Location: admin/dashboard_admin.php');
     exit;
 }
 
 require_once 'proses/config.php';
+require_once 'proses/csrf.php';
 
 // Ambil log_id dari URL atau session
 $log_id = null;
 
 if (isset($_GET['id'])) {
     $log_id = (int) $_GET['id'];
+} elseif (isset($_SESSION['active_log_id'])) { // <--- INI PENYELAMATNYA LEK!
+    $log_id = $_SESSION['active_log_id'];
+    unset($_SESSION['active_log_id']); // Langsung bersihin biar ga nyangkut
 } elseif (isset($_SESSION['current_log_id'])) {
-    $log_id = $_SESSION['current_log_id'];
-} elseif (isset($_SESSION['last_log_id'])) {
-    $log_id = $_SESSION['last_log_id'];
 } else {
     header('Location: riwayat.php');
     exit;
@@ -57,24 +56,20 @@ $nik_terdeteksi = $hasil['nik_final']
     ?? $hasil['nik_terdeteksi'] 
     ?? 'TIDAK DITEMUKAN';
 
-$skor      = ((float)($hasil['skor_kepercayaan'] ?? 0)) * 100;
+$skor      = ((float) ($hasil['skor_kepercayaan'] ?? 0)) * 100;
 $file_asli = $hasil['nama_file_asli'];
 $status    = $hasil['status_proses'];
-// Ambil raw_text dari database
-$raw_text = $hasil['raw_text'] ?? 'Data mentah tidak tersedia.';
+$raw_text  = $hasil['raw_text'] ?? '';
 
-// Status sukses proses
 $is_success = (
     in_array($status, ['pending_review', 'finalized', 'Berhasil']) &&
     !empty($nik_terdeteksi)
 );
 
-// Default tampilan skor
 $skor_badge_class = 'bg-red-100 text-red-800';
 $skor_text        = 'Rendah';
 $progress_class   = 'bg-red-600';
 
-// Klasifikasi skor kepercayaan
 if ($skor > 95) {
     $skor_badge_class = 'bg-green-100 text-green-800';
     $skor_text        = 'Sangat Tinggi';
@@ -89,7 +84,7 @@ if ($skor > 95) {
     $progress_class   = 'bg-yellow-600';
 }
 
-// Format NIK agar mudah dibaca
+// Format NIK dengan spasi setiap 4 digit untuk keterbacaan
 $nik_formatted = $nik_terdeteksi;
 if (strlen($nik_terdeteksi) === 16 && is_numeric($nik_terdeteksi)) {
     $nik_formatted =
@@ -99,7 +94,6 @@ if (strlen($nik_terdeteksi) === 16 && is_numeric($nik_terdeteksi)) {
         substr($nik_terdeteksi, 12, 4);
 }
 
-// Validasi file gambar
 $path_gambar_browser = 'public/images/' . ($hasil['nama_file_sistem'] ?? '');
 $path_gambar_server  = __DIR__ . '/public/images/' . ($hasil['nama_file_sistem'] ?? '');
 
@@ -107,9 +101,6 @@ $gambar_exists = (
     !empty($hasil['nama_file_sistem']) &&
     file_exists($path_gambar_server)
 );
-
-// Ambil raw text dari database (Sesuaikan nama kolom dengan yang ada di database lu)
-$raw_text = $hasil['raw_text'] ?? $data['raw_text'] ?? 'Teks mentah tidak tersedia/kosong.';
 
 
 ?>
@@ -234,31 +225,21 @@ $raw_text = $hasil['raw_text'] ?? $data['raw_text'] ?? 'Teks mentah tidak tersed
         <h3 class="text-sm font-semibold text-gray-900 mb-4">Raw Pembacaan Mesin OCR (Bounding Box)</h3>
         <div class="flex items-center justify-center rounded-lg bg-gray-100 border border-gray-200 p-2 overflow-hidden">
             <?php 
-                
- $python_dir = realpath(__DIR__ . '/PYTHON_OCR/temp_uploads/');
-              
-                // Path Hardcode disesuaikan dengan struktur final Tugas Akhir lu
-                if (!$python_dir || !file_exists($python_dir)) {
-                    $python_dir = 'C:/laragon/www/TugasAkhirCapstone/SistemOCRSamboja/PYTHON_OCR/temp_uploads/';
-                }
-              
-                $python_dir = rtrim($python_dir, '/\\') . '/';
+                $python_dir = realpath(__DIR__ . './PYTHON_OCR/temp_uploads/') . DIRECTORY_SEPARATOR;
 
                 $found_physical_path = '';
                 
-                if (file_exists($python_dir) && !empty($hasil['nama_file_sistem'])) {
-                    // Kita cari file BERDASARKAN NAMA SISTEM, bukan waktu terbaru
-                    $nama_file = $hasil['nama_file_sistem']; // cth: ktp_123.jpg
+                if (is_dir($python_dir) && !empty($hasil['nama_file_sistem'])) {
+                    $nama_file = $hasil['nama_file_sistem'];
                     
-                    // Target 1: Nama yang presisi (annotated_ktp_123.jpg)
+                    // Cari file annotated berdasarkan nama file sistem yang spesifik
                     $target_presisi = $python_dir . 'annotated_' . $nama_file;
                     
                     if (file_exists($target_presisi)) {
                         $found_physical_path = $target_presisi;
                     } else {
-                  
                         $nama_murni = pathinfo($nama_file, PATHINFO_FILENAME);
-                        $pencarian = glob($python_dir . '*annotated_*' . $nama_murni . '*');
+                        $pencarian  = glob($python_dir . '*annotated_*' . $nama_murni . '*');
                         
                         if (!empty($pencarian)) {
                             $found_physical_path = $pencarian[0];
@@ -302,48 +283,63 @@ $raw_text = $hasil['raw_text'] ?? $data['raw_text'] ?? 'Teks mentah tidak tersed
           </button>
 
       <!-- Kontainer Dropdown -->
+    <!-- Kontainer Dropdown -->
           <div id="rawDataContainer" class="hidden mt-2">
               <div class="bg-white border border-gray-300 rounded-md p-4">
                   
-                  <?php 
-                      // BONGKAR PAKET JSON TRANSPARAN DARI PYTHON
+                  <?php
                       $raw_data_json = json_decode($raw_text, true);
-                      $raw_list = $raw_data_json['semua_bounding_box'] ?? [];
-                      $raw_ocr_score = (float)($raw_data_json['skor_mentah_easyocr'] ?? 0);
-                      $keyword_jml = (int)($raw_data_json['keyword_ditemukan'] ?? 0);
-                      $is_16_digit = $raw_data_json['genap_16_digit'] ?? false;
-                      
-                      // Cek metode skor (Normal vs Fallback)
+                      $raw_list      = $raw_data_json['semua_bounding_box'] ?? [];
+                      $raw_ocr_score = (float) ($raw_data_json['skor_mentah_easyocr'] ?? 0);
+                      $keyword_jml   = (int) ($raw_data_json['keyword_ditemukan'] ?? 0);
+                      $is_16_digit   = $raw_data_json['genap_16_digit'] ?? false;
+
+                      // Deteksi apakah skor diambil dari bounding box langsung atau rata-rata fallback
                       $is_fallback = true;
                       foreach ($raw_list as $item) {
-                          if (abs((float)($item['score'] ?? 0) - $raw_ocr_score) < 0.001) {
+                          if (abs((float) ($item['score'] ?? 0) - $raw_ocr_score) < 0.001) {
                               $is_fallback = false;
                               break;
                           }
                       }
 
-                      // LOGIKA FILTER: PISAHKAN NIK (LIST) DAN KEYWORD (KOTAK-KOTAK)
-                      $daftar_keyword_ktp = ["PROVINSI", "KABUPATEN", "KOTA", "NAM", "LAHIR", "ALAMAT", "AGAMA", "DARAH", "KAWIN", "PEKERJAAN", "WARGA", "BERLAKU", "KELURAHAN", "DESA", "RT", "RW", "GOL"];
-                      
-                      $list_nik_lurus = [];
+                     $daftar_keyword_ktp = ["PROVINSI", "KABUPATEN", "KOTA", "NIK", "NAM", "LAHIR", "ALAMAT", "AGAMA", "DARAH", "KAWIN", "PEKERJAAN", "WARGA", "BERLAKU", "KELURAHAN", "DESA", "RT", "RW", "GOL"];
+
+                      $list_nik_lurus     = []; 
                       $list_keyword_kotak = [];
 
                       foreach($raw_list as $item) {
-                          $txt = htmlspecialchars($item['text'] ?? '');
-                          $scr = (float)($item['score'] ?? 0);
+                          $txt      = htmlspecialchars($item['text'] ?? '');
+                          $scr      = (float) ($item['score'] ?? 0);
                           $cek_teks = strtoupper(preg_replace('/\s+/', '', $txt));
 
-                          // 1. Cek Tulisan "NIK" atau Angka KTP (Min 10 digit biar tgl lahir ga masuk)
-                          if (strpos($cek_teks, 'NIK') !== false || preg_match('/\d{10,}/', $cek_teks)) {
-                              $list_nik_lurus[] = ['text' => $txt, 'score' => $scr];
-                              continue; // Kalau udah masuk list NIK, jangan dimasukin ke kotak keyword
-                          }
-
-                          // 2. Cek Kata Kunci KTP
-                          foreach($daftar_keyword_ktp as $kw) {
+                          // 1. CEK KATA KUNCI (JALUR VVIP - Masuk Kotak Kanan)
+                          // Termasuk kalau dia baca "NIK: 6404...", bakal nongkrong elit di sini!
+                          $is_keyword = false;
+                          foreach ($daftar_keyword_ktp as $kw) {
                               if (strpos($cek_teks, $kw) !== false) {
                                   $list_keyword_kotak[] = ['text' => $txt, 'score' => $scr];
+                                  $is_keyword = true;
                                   break;
+                              }
+                          }
+
+                        // 2. CEK KANDIDAT NIK/ANGKA MURNI (Masuk Kotak Kiri)
+                          if (!$is_keyword) {
+                              $jumlah_angka = preg_match_all('/\d/', $cek_teks);
+                              $panjang_teks = strlen($cek_teks);
+
+                              // JURUS BARU: Deteksi pola tanggal (DD-MM-YYYY, DD MM YYYY, DD/MM/YYYY) pada teks asli!
+                              // Polanya: 2 angka + pemisah(spasi/strip/titik) + 2 angka + pemisah + 4 angka
+                              $is_tanggal = preg_match('/\d{2}[\s\-\/\.]+\d{2}[\s\-\/\.]+\d{4}/', $txt);
+
+                              // FILTER SUPER KETAT:
+                              // 1. Panjang minimal 8 karakter (Buang RT/RW)
+                              // 2. Angka minimal 5 digit
+                              // 3. BUKAN format tanggal (is_tanggal harus false!)
+                              // 4. Gak ada tanda strip sisaan
+                              if ($panjang_teks >= 8 && $jumlah_angka >= 5 && !$is_tanggal && strpos($cek_teks, '-') === false) {
+                                  $list_nik_lurus[] = ['text' => $txt, 'score' => $scr];
                               }
                           }
                       }
@@ -351,10 +347,10 @@ $raw_text = $hasil['raw_text'] ?? $data['raw_text'] ?? 'Teks mentah tidak tersed
 
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                       
-                      <!-- KOLOM KIRI: DATA MENTAH (DIBAGI 2 SESUAI REQUEST) -->
+                      <!-- Kolom kiri: menampilkan data mentah OCR dan kandidat angka -->
                       <div class="flex flex-col gap-4 h-full">
                           
-                          <!-- BAGIAN ATAS: LIST LURUS NATIVE (HANYA NIK DAN ANGKA) -->
+                          <!-- Bagian atas: daftar kandidat NIK dan angka dari hasil OCR -->
                           <div class="flex flex-col">
                               <h6 class="text-xs font-bold text-gray-700 uppercase mb-2 border-b border-gray-200 pb-2 flex items-center gap-1.5"><i data-feather="target" class="w-3.5 h-3.5 text-blue-500"></i> Area NIK & Angka</h6>
                               <div class="bg-gray-50 border border-gray-200 rounded max-h-[180px] overflow-y-auto">
@@ -375,14 +371,14 @@ $raw_text = $hasil['raw_text'] ?? $data['raw_text'] ?? 'Teks mentah tidak tersed
                               </div>
                           </div>
 
-                      <!-- BAGIAN BAWAH: KEYWORD DIBUAT KOTAK-KOTAK (GRID ANTI TEMBUS) -->
+                      <!-- Bagian bawah: tampilan kata kunci dalam kartu -->
                           <div class="flex flex-col mt-4">
                               <h6 class="text-xs font-bold text-gray-700 uppercase mb-2 border-b border-gray-200 pb-2 flex items-center gap-1.5"><i data-feather="tag" class="w-3.5 h-3.5 text-blue-500"></i> Kata Kunci Terdeteksi</h6>
                               <div class="bg-white border border-gray-200 rounded p-3 max-h-[140px] overflow-y-auto">
                                   <?php if (empty($list_keyword_kotak)): ?>
                                       <p class="text-xs text-gray-400 italic text-center">Tidak ada kata kunci terdeteksi.</p>
                                   <?php else: ?>
-                                      <!-- GUE GANTI JADI GRID-COLS-2 BIAR MUTLAK MAKSIMAL 2 KOTAK LALU TURUN -->
+                                      <!-- Gunakan dua kolom agar setiap baris maksimum dua kartu -->
                                       <div class="grid grid-cols-2 gap-2">
                                           <?php foreach($list_keyword_kotak as $kw_item): ?>
                                           <div class="flex justify-between items-center bg-gray-50 border border-gray-200 px-2 py-1.5 rounded shadow-sm overflow-hidden" title="<?= htmlspecialchars($kw_item['text']) ?>">
@@ -405,8 +401,8 @@ $raw_text = $hasil['raw_text'] ?? $data['raw_text'] ?? 'Teks mentah tidak tersed
                           <h6 class="text-xs font-bold text-gray-700 uppercase mb-2 border-b border-gray-200 pb-2">Status Validasi Data</h6>
                           
                           <?php 
-                          // LOGIKA DINAMIS: Cek apakah ini hasil koreksi petugas atau murni mesin OCR
-                          // (Asumsi: Kalau dikoreksi manual, skornya pasti 100)
+                          // Logika validasi: tentukan apakah data berasal dari koreksi manual atau hasil mesin OCR
+                          // (Asumsi: skor 100 menunjukkan koreksi manual)
                           if ($skor == 100): 
                           ?>
                               <!-- TAMPILAN JIKA DATA SUDAH DIKOREKSI MANUAL -->
@@ -446,7 +442,7 @@ $raw_text = $hasil['raw_text'] ?? $data['raw_text'] ?? 'Teks mentah tidak tersed
                                   </p>
                               </div>
 
-                              <!-- Info Parameter Validasi -->
+                              <!-- Info Parame  ter Validasi -->
                               <div class="border border-gray-200 rounded p-3 mb-3">
                                   <p class="text-[10px] font-semibold text-gray-500 uppercase mb-2">Pengecekan Parameter</p>
                                   <div class="flex items-center gap-2 mb-1">
@@ -506,27 +502,32 @@ $raw_text = $hasil['raw_text'] ?? $data['raw_text'] ?? 'Teks mentah tidak tersed
           <i data-feather="upload" class="h-4 w-4"></i><span>Upload Baru</span>
         </a>
         <div class="flex items-center gap-4">
-          
-          <a href="koreksi.php?id=<?php echo $log_id; ?>" class="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50">
-            <i data-feather="edit-3" class="h-4 w-4"></i>
-            <span>
-                <?php echo ($status === 'finalized') ? 'Revisi Data' : 'Koreksi Data'; ?>
-            </span>
-          </a>
+
+          <form method="POST" action="koreksi.php" class="inline">
+            <?php echo csrf_field(); ?>
+            <input type="hidden" name="log_id" value="<?php echo $log_id; ?>">
+            <button type="submit" class="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50">
+              <i data-feather="edit-3" class="h-4 w-4"></i>
+              <span><?php echo ($status === 'finalized') ? 'Revisi Data' : 'Koreksi Data'; ?></span>
+            </button>
+          </form>
 
           <?php if ($status !== 'finalized'): ?>
-            <a href="proses/proses_simpan.php?log_id=<?php echo $log_id; ?>" 
-               class="flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-green-700"
-               <?php if (!$is_success) echo 'style="display:none;"'; ?>
-               >
-              <i data-feather="check" class="h-4 w-4"></i>
-              <span>Simpan Final & Selesai</span>
-            </a>
+            <?php if ($is_success): ?>
+            <form method="POST" action="proses/proses_simpan.php" class="inline">
+              <?php echo csrf_field(); ?>
+              <input type="hidden" name="log_id" value="<?php echo $log_id; ?>">
+              <button type="submit" class="flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-green-700">
+                <i data-feather="check" class="h-4 w-4"></i>
+                <span>Simpan Final & Selesai</span>
+              </button>
+            </form>
+            <?php endif; ?>
           <?php else: ?>
-             <button disabled class="flex items-center gap-2 rounded-lg bg-gray-300 px-5 py-2.5 text-sm font-medium text-white shadow-sm cursor-not-allowed">
-               <i data-feather="check" class="h-4 w-4"></i>
-               <span>Data Sudah Disimpan</span>
-             </button>
+            <button disabled class="flex items-center gap-2 rounded-lg bg-gray-300 px-5 py-2.5 text-sm font-medium text-white shadow-sm cursor-not-allowed">
+              <i data-feather="check" class="h-4 w-4"></i>
+              <span>Data Sudah Disimpan</span>
+            </button>
           <?php endif; ?>
 
         </div>

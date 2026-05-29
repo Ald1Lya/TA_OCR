@@ -1,78 +1,69 @@
 <?php
 session_start();
-include 'config.php'; 
+require_once 'config.php';
+require_once 'csrf.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../index.php');
     exit;
 }
 
-$log_id = $_POST['data_id'] ?? null;
-if (empty($log_id)) die("ID data tidak ditemukan.");
+csrf_verify();
+
+$log_id = isset($_POST['data_id']) ? (int) $_POST['data_id'] : 0;
+if ($log_id <= 0) {
+    die('ID data tidak valid.');
+}
+
+// Direktori penyimpanan gambar (path dinamis, tidak hardcoded)
+$base_path  = realpath(__DIR__ . '/..');
+$dir_public = $base_path . '/public/images/';
+$dir_temp   = $base_path . '/PYTHON_OCR/temp_uploads/';
 
 try {
-    // 1. AMBIL DUA JENIS NAMA FILE DARI DB
-    $sql_get = "SELECT nama_file_sistem, nama_file_asli FROM log_ocr WHERE log_id = ?";
-    $stmt = mysqli_prepare($db, $sql_get);
-    mysqli_stmt_bind_param($stmt, "i", $log_id);
+    // Ambil nama file dari database sebelum dihapus
+    $stmt = mysqli_prepare($db, "SELECT nama_file_sistem, nama_file_asli FROM log_ocr WHERE log_id = ?");
+    mysqli_stmt_bind_param($stmt, 'i', $log_id);
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
-    $data = mysqli_fetch_assoc($result);
+    $data   = mysqli_fetch_assoc($result);
     mysqli_stmt_close($stmt);
 
     if ($data && !empty($data['nama_file_sistem'])) {
         $nama_file = $data['nama_file_sistem'];
-        $nama_asli = $data['nama_file_asli'];
 
-        $base_path = 'C:/laragon/www/TugasAkhirCapstone/SistemOCRSamboja';
-        
-        $dir_public = $base_path . '/public/images/';
-        $dir_temp   = $base_path . '/PYTHON_OCR/temp_uploads/';
-
-        $target_public = $dir_public . $nama_file;
+        // Hapus file gambar utama dari folder public
+        $target_public = $dir_public . basename($nama_file);
         if (file_exists($target_public)) {
             @unlink($target_public);
         }
 
-        $keywords = [];
-        
-        $keywords[] = pathinfo($nama_file, PATHINFO_FILENAME);
-        
-        if (!empty($nama_asli)) {
-            $keywords[] = pathinfo($nama_asli, PATHINFO_FILENAME);
-        }
+        // Hapus file annotated OCR dari folder temp Python berdasarkan nama file sistem
+        $nama_murni = pathinfo($nama_file, PATHINFO_FILENAME);
+        $pola       = $dir_temp . '*' . $nama_murni . '*';
+        $files      = glob($pola);
 
-        foreach ($keywords as $kunci) {
-            $pola = $dir_temp . "*" . $kunci . "*";
-            $files_found = glob($pola);
-
-            if ($files_found) {
-                foreach ($files_found as $file) {
-                    $file = str_replace('/', '\\', $file); // Fix Windows Slash
-                    clearstatcache(true, $file);
-                    
-                    if (file_exists($file)) {
-                        @chmod($file, 0777);
-                        if (!@unlink($file)) {
-                            // JURUS TERAKHIR: CMD FORCE DELETE
-                            shell_exec('del /F /Q "' . $file . '"');
-                        }
-                    }
+        if ($files) {
+            foreach ($files as $file) {
+                $file = str_replace('/', DIRECTORY_SEPARATOR, $file);
+                clearstatcache(true, $file);
+                if (file_exists($file)) {
+                    @unlink($file);
                 }
             }
         }
     }
 
-  
-    $sql_del = "DELETE FROM log_ocr WHERE log_id = ?";
-    $stmt_del = mysqli_prepare($db, $sql_del);
-    mysqli_stmt_bind_param($stmt_del, "i", $log_id);
-    $success = mysqli_stmt_execute($stmt_del);
-    mysqli_stmt_close($stmt_del);
+    // Hapus record dari database
+    $stmt = mysqli_prepare($db, "DELETE FROM log_ocr WHERE log_id = ?");
+    mysqli_stmt_bind_param($stmt, 'i', $log_id);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
 
     header('Location: ../riwayat.php?msg=hapus_sukses');
 
 } catch (Exception $e) {
-    die("Error: " . $e->getMessage());
+    header('Location: ../riwayat.php?msg=gagal');
 }
+exit;
 ?>

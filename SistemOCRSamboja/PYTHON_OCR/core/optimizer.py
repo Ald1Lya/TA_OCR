@@ -1,32 +1,23 @@
 import cv2
-import numpy as np  # Pastikan install: pip install numpy
-import os
+import numpy as np
 
-def optimize_image(image_path):
+
+def optimize_image(image_path: str):
     """
-    Tukang Pintu.
-    Membaca file sebagai bytes ke RAM dulu, baru didecode.
-    Ini menjamin file fisik TIDAK DIKUNCI oleh OpenCV.
+    Membaca file gambar ke memori (RAM-based loading) sebelum di-decode oleh OpenCV.
+    Pendekatan ini menghindari potensi file-lock pada sistem operasi Windows.
+
+    Returns:
+        tuple: (img, None) jika berhasil, atau (None, pesan_error) jika gagal.
     """
     try:
-        
-        # BACA DATA KE MEMORI LALU TUTUP FILE
         with open(image_path, 'rb') as f:
             file_bytes = np.asarray(bytearray(f.read()), dtype=np.uint8)
-            
-        # DECODE DARI MEMORI (File fisik sudah bebas)
+
         img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
 
         if img is None:
-            raise ValueError("Gagal membaca gambar.")
-            
-        # Logika Resize Tetap Sama
-        max_dim = 1000  
-        h, w = img.shape[:2]
-        
-        if h > max_dim or w > max_dim:
-            scale = max_dim / max(h, w)
-            img = cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+            raise ValueError("Gambar gagal dibaca atau format tidak didukung.")
 
         return img, None
 

@@ -1,14 +1,12 @@
-<?php
+﻿<?php
 session_start();
-
-// --- 1. AJAX HANDLER UNTUK AUTO REFRESH RIWAYAT ---
-// Bagian ini akan dipanggil oleh Javascript setiap 5 detik
+date_default_timezone_set('Asia/Jakarta');
+// AJAX: kembalikan 5 riwayat terbaru milik operator (dipanggil setiap 5 detik)
 if (isset($_GET['ajax_history'])) {
     require_once 'proses/config.php'; // Pastikan path config benar
     $user_id = $_SESSION['user_id'];
     
-    // Ambil 5 data terbaru
-    $sql = "SELECT lo.log_id, lo.waktu_upload, lo.nama_file_asli, lo.status_proses 
+        $sql = "SELECT lo.log_id, lo.waktu_upload, lo.nama_file_asli, lo.status_proses 
             FROM log_ocr lo WHERE lo.id_staf = ? ORDER BY lo.waktu_upload DESC LIMIT 5";
     $stmt = mysqli_prepare($db, $sql);
     mysqli_stmt_bind_param($stmt, "i", $user_id);
@@ -18,8 +16,7 @@ if (isset($_GET['ajax_history'])) {
     $output = '';
     if (mysqli_num_rows($result) > 0) {
         while ($row = mysqli_fetch_assoc($result)) {
-            // Logika Badge Status
-            $badgeClass = 'bg-gray-100 text-gray-600';
+                        $badgeClass = 'bg-gray-100 text-gray-600';
             $statusText = 'Pending';
             
             if ($row['status_proses'] === 'finalized' || $row['status_proses'] === 'Berhasil') {
@@ -33,8 +30,7 @@ if (isset($_GET['ajax_history'])) {
                 $statusText = 'Gagal';
             }
 
-            // Hitung Waktu
-            $selisih = time() - strtotime($row['waktu_upload']);
+                        $selisih = time() - strtotime($row['waktu_upload']);
             if ($selisih < 60) $waktu = "Baru saja";
             elseif ($selisih < 3600) $waktu = floor($selisih / 60) . " menit lalu";
             elseif ($selisih < 86400) $waktu = floor($selisih / 3600) . " jam lalu";
@@ -57,17 +53,15 @@ if (isset($_GET['ajax_history'])) {
         $output = '<p class="text-gray-400 italic text-sm text-center py-4">Belum ada aktivitas.</p>';
     }
     echo $output;
-    exit; // Stop eksekusi biar gak ngerender halaman utuh
+    exit; // Hentikan eksekusi agar halaman tidak dirender ulang
 }
 
-// --- LOGIKA HALAMAN UTAMA ---
 if (!isset($_SESSION['user_id'])) { header('Location: index.php'); exit; }
 if (strtolower($_SESSION['role']) === 'admin') { header('Location: admin/dashboard_admin.php'); exit; }
 
 date_default_timezone_set('Asia/Jakarta');
 require_once 'proses/config.php';
 
-// Cek status akun
 $user_id = $_SESSION['user_id'];
 $sql_cek = "SELECT status FROM staf_kecamatan WHERE id = ?";
 $stmt = mysqli_prepare($db, $sql_cek);
@@ -206,7 +200,7 @@ if (!$user || strtolower(trim($user['status'])) !== 'aktif') {
             </div>
             
             <div class="mt-4 pt-4 border-t border-gray-100 text-center">
-                <a href="riwayat.php" class="text-xs font-bold text-green-600 hover:text-green-700 hover:underline">Lihat Semua Riwayat →</a>
+                <a href="riwayat.php" class="text-xs font-bold text-green-600 hover:text-green-700 hover:underline">Lihat Semua Riwayat </a>
             </div>
           </div>
         </div>
@@ -246,7 +240,7 @@ if (!$user || strtolower(trim($user['status'])) !== 'aktif') {
                   <i data-feather="zoom-in" class="w-4 h-4"></i> Perbesar
               </button>
           </div>
-          <p class="text-[10px] text-gray-400 text-center">*Tips: Anda juga bisa zoom menggunakan scroll mouse pada gambar.</p>
+         
       </div>
 
       <div class="flex justify-end gap-3 mt-6 border-t border-gray-100 pt-4">
@@ -278,8 +272,7 @@ if (!$user || strtolower(trim($user['status'])) !== 'aktif') {
     let cropper = null;
     let currentFile = null;
 
-    // --- 1. HANDLE UPLOAD & CROP ---
-    dropzone.addEventListener("click", () => fileInput.click());
+        dropzone.addEventListener("click", () => fileInput.click());
     fileInput.addEventListener("change", (e) => handleFiles(e.target.files));
 
     const handleFiles = (files) => {
@@ -307,15 +300,15 @@ if (!$user || strtolower(trim($user['status'])) !== 'aktif') {
 
         if (cropper) cropper.destroy();
         
-        // --- [PERBAIKAN FITUR]: Menyalakan akses Zoom penuh ---
+        // Aktifkan fitur zoom pada area crop
         cropper = new Cropper(cropImage, {
             viewMode: 1,
             background: false,
             responsive: true,
             autoCropArea: 0.8,
-            zoomable: true,       // Boleh di-zoom
-            zoomOnWheel: true,    // AKTIF: Bisa zoom pake scroll mouse!
-            zoomOnTouch: true     // AKTIF: Bisa dicubit-cubit di layar HP!
+            zoomable: true,       // enable zoom
+            zoomOnWheel: true,    // enable zoom via mouse wheel
+            zoomOnTouch: true     // enable touch pinch zoom
         });
       };
       reader.readAsDataURL(file);
@@ -374,8 +367,7 @@ if (!$user || strtolower(trim($user['status'])) !== 'aktif') {
       fileInput.value = "";
     };
 
-    // --- 2. HANDLE PROSES UPLOAD (SWEETALERT) ---
-    document.getElementById("proses-semua").onclick = async () => {
+        document.getElementById("proses-semua").onclick = async () => {
       if (fileQueue.files.length === 0) {
           return Swal.fire({
               icon: 'warning',
@@ -432,8 +424,7 @@ if (!$user || strtolower(trim($user['status'])) !== 'aktif') {
       }
     };
 
-    // --- 3. AUTO REFRESH RIWAYAT (AJAX) ---
-    function updateRiwayat() {
+        function updateRiwayat() {
         fetch('?ajax_history=1')
             .then(response => response.text())
             .then(html => {

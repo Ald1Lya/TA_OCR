@@ -44,53 +44,30 @@ header('Expires: 0');
 
 $output = fopen('php://output', 'w');
 
-// BOM biar Excel waras
+// BOM UTF-8 agar Excel membaca encoding dengan benar
 fwrite($output, "\xEF\xBB\xBF");
 
-fputcsv($output, [
-    'No',
-    'Waktu Proses',
-    'Nama File',
-    'NIK',
-    'Status',
-    'Akurasi',
-    'Operator'
-]);
+fputcsv($output, ['No', 'Waktu Proses', 'Nama File', 'NIK', 'Status', 'Akurasi', 'Operator']);
 
 $no = 1;
 
 while ($row = mysqli_fetch_assoc($result)) {
-
     $waktu = date('d/m/Y H:i', strtotime($row['waktu_upload']));
 
     switch ($row['status_proses']) {
-        case 'finalized':
-            $status = 'Berhasil';
-            break;
-        case 'pending_review':
-            $status = 'Perlu Cek';
-            break;
+        case 'finalized':   $status = 'Berhasil';   break;
+        case 'pending_review': $status = 'Perlu Cek'; break;
         case 'failed':
-        case 'error_php':
-            $status = 'Gagal';
-            break;
-        default:
-            $status = 'Memproses';
+        case 'error_php':   $status = 'Gagal';      break;
+        default:            $status = 'Memproses';
     }
 
-    $akurasi = number_format((float)$row['skor_kepercayaan'] * 100, 1) . '%';
+    $akurasi  = number_format((float) $row['skor_kepercayaan'] * 100, 1) . '%';
     $operator = $row['operator'] ?: 'Sistem';
-    $nik = $row['nik'] ? '="' . $row['nik'] . '"' : '-';
+    // Prefix ="..." mencegah Excel mengubah NIK menjadi notasi ilmiah
+    $nik      = $row['nik'] ? '="' . $row['nik'] . '"' : '-';
 
-    fputcsv($output, [
-        $no++,
-        $waktu,
-        $row['nama_file_asli'],
-        $nik,
-        $status,
-        $akurasi,
-        $operator
-    ]);
+    fputcsv($output, [$no++, $waktu, $row['nama_file_asli'], $nik, $status, $akurasi, $operator]);
 }
 
 fclose($output);

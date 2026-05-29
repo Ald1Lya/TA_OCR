@@ -106,18 +106,16 @@
 
     document.addEventListener("DOMContentLoaded", () => {
 
-        // --- 1. ANIMASI PROGRESS BAR (Otomatis naik ke 90%) ---
+        // Progress bar naik otomatis hingga 90% selama OCR berjalan, lalu lanjut ke 100% setelah selesai
         const animationInterval = setInterval(() => {
             let increment = 0;
 
             if (!backendFinished) {
-                // Selama Python belum kelar, progress mentok di 90%
                 if (currentProgress < 90) {
                     increment = Math.random() * 0.5 + 0.2;
                 }
             } else {
-                // Kalau Python kasih sinyal BERES, langsung lari ke 100%
-                increment = 5; 
+                increment = 5;
             }
 
             currentProgress += increment;
@@ -135,13 +133,12 @@
             updateVisuals(currentProgress);
         }, 50);
 
-
-        // --- 2. TRIGGER OCR (HIT AND RUN) ---
+        // Kirim trigger ke backend untuk memulai proses OCR (fire-and-forget)
         const formData = new FormData();
         formData.append('action', 'trigger_ocr');
         fetch('proses/proses_upload.php', { method: 'POST', body: formData });
 
-// --- 3. KEMBALIKAN POLLING (VERSI TENDANG PAKSA) ---
+        // Polling status OCR setiap 1.5 detik hingga backend selesai
         const poller = setInterval(async () => {
             if (typeof backendFinished !== 'undefined' && backendFinished) {
                 clearInterval(poller);
@@ -155,28 +152,23 @@
                 const res  = await fetch('proses/proses_upload.php', { method: 'POST', body: checkForm });
                 const json = await res.json();
 
-                // [SKENARIO A]: JIKA MESIN TIMEOUT / GAGAL
                 if (json.success === false) {
                     clearInterval(poller);
-                    backendFinished = true; 
-                    alert("Mesin OCR Kewalahan / Error: " + (json.message || "Silakan coba lagi."));
-                    window.location.href = 'upload.php'; 
+                    backendFinished = true;
+                    alert("Mesin OCR mengalami error: " + (json.message || "Silakan coba lagi."));
+                    window.location.href = 'upload.php';
                     return;
                 }
 
-                // [SKENARIO B]: JIKA NORMAL / SUKSES
                 if (json.success && (json.status === 'done' || json.status === 'pending_review' || json.status === 'Berhasil' || json.status === 'failed_but_continue')) {
                     clearInterval(poller);
-                    backendFinished = true; 
-                    
-                    // UBAH TULISAN BIAR KEREN
-                    const statusTitle = document.getElementById('status-title'); // Sesuaikan id kalau beda
+                    backendFinished = true;
+
+                    const statusTitle = document.getElementById('status-title');
                     if (statusTitle) statusTitle.textContent = "Berhasil! Mengalihkan...";
 
-                    // PAKSA PINDAH HALAMAN SETELAH JEDA SETENGAH DETIK!
                     setTimeout(() => {
-                        // CATATAN: Kalau link halaman hasil lu beda, ganti di sini ya!
-                        window.location.href = 'hasilocr.php'; 
+                        window.location.href = 'hasilocr.php';
                     }, 500);
                 }
             } catch (e) {
@@ -184,7 +176,6 @@
             }
         }, 1500);
 
-        // --- FUNGSI UPDATE VISUAL UI ---
         function updateVisuals(percent) {
             const value = Math.round(percent);
             progressBar.style.width = value + '%';
@@ -219,7 +210,6 @@
             });
         }
 
-        // --- FUNGSI REDIRECT ---
         function finalizeAndRedirect() {
             steps.forEach(step => {
                 const icon = step.querySelector('i');

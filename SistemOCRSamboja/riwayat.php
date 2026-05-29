@@ -1,21 +1,20 @@
-<?php
+﻿<?php
 session_start();
 
-// Validasi login
+
 if (!isset($_SESSION['user_id'])) {
     header('Location: index.php');
     exit;
 }
 
-// Redirect admin
 if (strtolower($_SESSION['role']) === 'admin') {
     header('Location: admin/dashboard_admin.php');
     exit;
 }
 
 require_once 'proses/config.php';
+require_once 'proses/csrf.php';
 
-// Validasi koneksi database
 if (!$db) {
     header('Location: index.php?msg=db_error');
     exit;
@@ -23,7 +22,6 @@ if (!$db) {
 
 $user_id = $_SESSION['user_id'];
 
-// Cek status akun user
 $sql_cek = "SELECT status FROM staf_kecamatan WHERE id = ?";
 $stmt = mysqli_prepare($db, $sql_cek);
 
@@ -44,12 +42,30 @@ if (!$user || strtolower(trim($user['status'])) !== 'aktif') {
     exit;
 }
 
-// Filter dan pencarian
 $filter_status = $_GET['status'] ?? '';
 $search        = $_GET['search'] ?? '';
 $highlight_id  = $_GET['highlight_id'] ?? null;
 
-// Query riwayat OCR
+// Query riwayat OCR dengan prepared statement untuk keamanan
+$conditions = ["lo.id_staf = ?"];
+$params     = [$user_id];
+$types      = "i";
+
+if (!empty($filter_status)) {
+    $conditions[] = "lo.status_proses = ?";
+    $params[]     = $filter_status;
+    $types       .= "s";
+}
+
+if (!empty($search)) {
+    $conditions[] = "(lo.nama_file_asli LIKE ? OR lo.nik_final LIKE ? OR lo.nik_terdeteksi LIKE ?)";
+    $like         = '%' . $search . '%';
+    $params[]     = $like;
+    $params[]     = $like;
+    $params[]     = $like;
+    $types       .= "sss";
+}
+
 $sql = "SELECT 
             lo.log_id,
             lo.waktu_upload AS waktu_proses,
@@ -61,40 +77,25 @@ $sql = "SELECT
             sk.nama_lengkap AS operator_nama
         FROM log_ocr lo
         LEFT JOIN staf_kecamatan sk ON lo.id_staf = sk.id
-        WHERE lo.id_staf = '$user_id'"; // <-- TAMBAHKAN INI
+        WHERE " . implode(' AND ', $conditions) . "
+        ORDER BY lo.waktu_upload DESC";
 
-// Filter status jika dipilih
-if (!empty($filter_status)) {
-    $filter_status_safe = mysqli_real_escape_string($db, $filter_status);
-    $sql .= " AND lo.status_proses = '$filter_status_safe'";
-}
+$stmt = mysqli_prepare($db, $sql);
+mysqli_stmt_bind_param($stmt, $types, ...$params);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
 
-// Filter pencarian
-if (!empty($search)) {
-    $search_safe = mysqli_real_escape_string($db, $search);
-    $sql .= " AND (
-                lo.nama_file_asli LIKE '%$search_safe%' 
-                OR lo.nik_final LIKE '%$search_safe%' 
-                OR lo.nik_terdeteksi LIKE '%$search_safe%'
-            )";
-}
-
-$sql .= " ORDER BY lo.waktu_upload DESC";
-
-// Eksekusi query
 $riwayat = [];
-$result = mysqli_query($db, $sql);
-
 if ($result) {
     while ($row = mysqli_fetch_assoc($result)) {
         $riwayat[] = $row;
     }
 }
+mysqli_stmt_close($stmt);
 
 $total_rows = count($riwayat);
 mysqli_close($db);
 
-// Pagination
 $perPage    = 6;
 $page       = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $totalPages = max(1, ceil($total_rows / $perPage));
@@ -102,7 +103,6 @@ $start      = ($page - 1) * $perPage;
 
 $riwayat_page = array_slice($riwayat, $start, $perPage);
 
-// Helper badge status
 function getStatusBadge($status) {
     switch ($status) {
         case 'finalized':
@@ -288,10 +288,7 @@ function getStatusBadge($status) {
                   $gambar_exists = $data['nama_file_sistem'] && file_exists($server_path);
                   $path_gambar = 'public/images/' . ($data['nama_file_sistem'] ?? '');
 
-                  // --- LOGIC HIGHLIGHT ---
-                  // Cek apakah ID baris ini sama dengan ID yang baru diedit
                   $is_highlight = ($highlight_id == $data['log_id']);
-                  // Kalau sama, kasih class 'highlight-row', kalau tidak kosongin aja
                   $extraClass = $is_highlight ? 'highlight-row' : 'hover:bg-gray-50';
                 ?>
                 <tr class="<?= $extraClass ?> transition duration-150 ease-in-out group">
@@ -356,12 +353,27 @@ function getStatusBadge($status) {
                   </td>
                   <td class="px-6 py-4 text-right">
                     <div class="flex items-center justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                        <a href="koreksi.php?id=<?= $data['log_id'] ?>" class="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition"><i data-feather="edit-3" class="w-4 h-4"></i></a>
-                        <a href="hasilriwayat.php?id=<?= $data['log_id'] ?>" class="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-md transition"><i data-feather="eye" class="w-4 h-4"></i></a>
+                        <form method="POST" action="proses/proses_navigasi.php" class="inline">
+                          <?php echo csrf_field(); ?>
+                          <input type="hidden" name="log_id" value="<?= $data['log_id'] ?>">
+                          <input type="hidden" name="tujuan" value="koreksi">
+                          <button type="submit" class="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition" title="Koreksi">
+                            <i data-feather="edit-3" class="w-4 h-4"></i>
+                          </button>
+                        </form>
+                        <form method="POST" action="proses/proses_navigasi.php" class="inline">
+                          <?php echo csrf_field(); ?>
+                          <input type="hidden" name="log_id" value="<?= $data['log_id'] ?>">
+                          <input type="hidden" name="tujuan" value="hasilriwayat">
+                          <button type="submit" class="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-md transition" title="Lihat Detail">
+                            <i data-feather="eye" class="w-4 h-4"></i>
+                          </button>
+                        </form>
                         
                         <form action="proses/proses_hapus_data.php" method="POST" class="inline form-hapus" onsubmit="return konfirmasiHapus(event, this);">
                             <input type="hidden" name="action" value="hapus_data_ktp">
                             <input type="hidden" name="data_id" value="<?= $data['log_id'] ?>">
+                            <?php echo csrf_field(); ?>
                             <button type="submit" class="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition" title="Hapus">
                                 <i data-feather="trash-2" class="w-4 h-4"></i>
                             </button>
@@ -426,7 +438,7 @@ function getStatusBadge($status) {
 
     const urlParams = new URLSearchParams(window.location.search);
     const msg = urlParams.get('msg');
-    const highlightId = urlParams.get('highlight_id'); // Cek ada highlight_id gak
+    const highlightId = urlParams.get('highlight_id');
 
     if (msg) {
         if (msg === 'hapus_sukses') { 
@@ -439,10 +451,8 @@ function getStatusBadge($status) {
             Toast.fire({ icon: 'warning', title: 'Akses ditolak.' });
         }
         
-        // Hapus parameter biar bersih, TAPI HATI-HATI:
-        // Kalau kita hapus URL-nya langsung, nanti kalau user refresh manual, highlight-nya ilang.
-        // Tapi sesuai request "bistu hilang", jadi gapapa kita bersihin URL-nya.
-        // Highlight-nya sendiri udah diurus sama CSS Animation (fadeHighlight).
+        // Bersihkan parameter URL setelah menampilkan notifikasi.
+        // Highlight tetap ada berkat animasi CSS yang sudah diterapkan.
         window.history.replaceState(null, null, window.location.pathname);
     }
 

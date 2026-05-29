@@ -1,27 +1,30 @@
-<?php
+﻿<?php
 session_start();
 
-// Validasi login
 if (!isset($_SESSION['user_id'])) {
     header('Location: index.php');
     exit;
 }
 
-// Redirect admin
 if (strtolower($_SESSION['role']) === 'admin') {
     header('Location: admin/dashboard_admin.php');
     exit;
 }
 
 require_once 'proses/config.php';
+require_once 'proses/csrf.php';
 
-// Ambil log_id dari parameter URL
-$log_id = $_GET['log_id'] ?? $_GET['id'] ?? null;
-if (!$log_id) {
-    die('Log ID tidak ditemukan');
+$log_id = isset($_POST['log_id']) ? (int) $_POST['log_id']
+        : (isset($_SESSION['active_log_id']) ? (int) $_SESSION['active_log_id'] : 0);
+
+if ($log_id <= 0) {
+    header('Location: riwayat.php');
+    exit;
 }
 
-// Ambil data log OCR (DITAMBAH RAW_TEXT)
+// Simpan ke session agar navigasi balik tetap bisa tanpa URL param
+$_SESSION['active_log_id'] = $log_id;
+
 $sql  = "SELECT 
             nik_terdeteksi, 
             nik_final, 
@@ -47,15 +50,11 @@ if (!$result || mysqli_num_rows($result) === 0) {
 $data = mysqli_fetch_assoc($result);
 mysqli_stmt_close($stmt);
 
-// Tentukan NIK yang digunakan
 $is_corrected = !empty($data['nik_final']);
 $nik_saat_ini = $is_corrected
     ? $data['nik_final']
     : ($data['nik_terdeteksi'] ?? 'TIDAK DITEMUKAN');
 
-// =====================================================================
-// BONGKAR JSON RAW TEXT & FILTER HANYA ANGKA & KEYWORD (BUANG NOISE)
-// =====================================================================
 $raw_text_json = json_decode($data['raw_text'] ?? '{}', true);
 $raw_list = $raw_text_json['semua_bounding_box'] ?? [];
 
@@ -69,10 +68,8 @@ foreach($raw_list as $item) {
     $scr = (float)($item['score'] ?? 0);
     $cek_teks = strtoupper(preg_replace('/\s+/', '', $txt));
 
-    // Cek apakah ada angka (Kandidat NIK / Tanggal)
-    $has_number = preg_match('/[0-9]/', $cek_teks);
+        $has_number = preg_match('/[0-9]/', $cek_teks);
     
-    // Cek apakah ini bagian dari Keyword KTP
     $is_keyword = false;
     foreach($daftar_keyword_ktp as $kw) {
         if (strpos($cek_teks, $kw) !== false) {
@@ -87,20 +84,17 @@ foreach($raw_list as $item) {
     } elseif ($is_keyword) {
         $list_keyword_ui[] = ['text' => $txt, 'score' => $scr];
     }
-    // Jika tidak ada angka dan bukan keyword, SKIP (Dibuang dari UI biar nggak nyampah)
+    // Jika bukan angka atau keyword, abaikan agar tidak ditampilkan dalam UI
 }
 
-// Validasi gambar
 $nama_file            = $data['nama_file_sistem'] ?? '';
 $path_gambar_browser  = 'public/images/' . $nama_file;
 $gambar_exists        = ($nama_file && file_exists($path_gambar_browser));
 
-// Flash data form
 $old   = $_SESSION['old'] ?? [];
 $error = $_SESSION['error'] ?? null;
 unset($_SESSION['old'], $_SESSION['error']);
 
-// Riwayat koreksi (audit log)
 $audit_logs = [];
 
 $audit_sql = "SELECT 
@@ -171,11 +165,11 @@ if ($stmt_audit) {
                 <p class="text-sm text-gray-500 mt-1">ID Dokumen: <span class="font-mono text-gray-700"><?php echo htmlspecialchars($log_id); ?></span></p>
             </div>
             <div class="flex items-center gap-3">
-                <a href="hasilriwayat.php?id=<?php echo htmlspecialchars($log_id); ?>" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition shadow-sm">
+                <a href="hasilriwayat.php" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition shadow-sm">
                     <i data-feather="arrow-left" class="w-4 h-4 mr-2"></i> 
                     Kembali ke Hasil OCR
                 </a>
-                <a href="riwayat.php?id=<?php echo htmlspecialchars($log_id); ?>" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition shadow-sm">
+                <a href="riwayat.php" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition shadow-sm">
                     <i data-feather="list" class="w-4 h-4 mr-2"></i> 
                     Kembali ke Riwayat Upload
                 </a>
@@ -229,7 +223,7 @@ if ($stmt_audit) {
 
                     <div class="h-[280px] overflow-y-auto p-4 flex flex-col gap-4">
                         
-                        <!-- PINTU GERBANG PHP: SARING HANYA YANG MIRIP NIK (MINIMAL 12 DIGIT) -->
+                        <!-- Filter kandidat NIK: hanya angka dengan minimal 12 digit -->
                         <?php 
                         $kandidat_nik_bersih = [];
                         if (!empty($list_angka_ui)) {
@@ -237,7 +231,7 @@ if ($stmt_audit) {
                                 // Ekstrak hanya angkanya saja untuk dihitung
                                 $hanya_angka = preg_replace('/[^0-9]/', '', $item['text']);
                                 
-                                // Kalau jumlah angkanya minimal 12 digit, baru boleh masuk layar operator!
+                                // Masukkan angka ke kandidat hanya jika panjangnya minimal 12 digit.
                                 if (strlen($hanya_angka) >= 12) {
                                     $kandidat_nik_bersih[] = $item;
                                 }
@@ -308,6 +302,7 @@ if ($stmt_audit) {
                     </div>
 
                     <form action="proses/proses_koreksi.php" method="POST" class="space-y-5">
+                        <?php echo csrf_field(); ?>
                         <input type="hidden" name="log_id" value="<?php echo htmlspecialchars($log_id); ?>">
 
                         <div>
@@ -329,11 +324,17 @@ if ($stmt_audit) {
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <i data-feather="edit-2" class="h-4 w-4 text-green-500"></i>
                                 </div>
-                                <input type="text" id="nik-terkoreksi" name="nik_terkoreksi"
-                                       value="<?php echo htmlspecialchars($old['nik_terkoreksi'] ?? $nik_saat_ini); ?>"
-                                       placeholder="Masukkan 16 digit angka..."
-                                       class="block w-full pl-10 pr-3 py-2.5 rounded-lg border-2 border-green-200 focus:border-green-500 focus:ring-0 text-gray-900 font-mono text-base shadow-sm transition-colors"
-                                       required autofocus>
+                          <input type="text"
+                                id="nik-terkoreksi"
+                                name="nik_terkoreksi"
+                                value="<?php echo htmlspecialchars($old['nik_terkoreksi'] ?? $nik_saat_ini); ?>"
+                                placeholder="Masukkan 16 digit angka..."
+                                maxlength="16"
+                                pattern="[0-9]{16}"
+                                inputmode="numeric"
+                                oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0,16)"
+                                class="block w-full pl-10 pr-3 py-2.5 rounded-lg border-2 border-green-200 focus:border-green-500 focus:ring-0 text-gray-900 font-mono text-base shadow-sm transition-colors"
+                                required autofocus>
                             </div>
                         </div>
 
@@ -424,19 +425,16 @@ if ($stmt_audit) {
         // Render feather icons
         feather.replace();
 
-        // FUNGSI JAVASCRIPT SAKTI BUAT AUTO-COPY KE FORM KOREKSI
+        // Salin teks OCR ke input form, strip karakter non-digit
         function copyToForm(rawText) {
-            // Bersihkan teks, buang huruf, ambil angkanya aja
             let angkaSaja = rawText.replace(/[^0-9]/g, '');
             
             if(angkaSaja !== "") {
                 let inputTarget = document.getElementById('nik-terkoreksi');
                 
-                // Masukin angkanya ke dalam input form
-                inputTarget.value = angkaSaja;
+                    inputTarget.value = angkaSaja;
                 
-                // Kasih efek visual kelap-kelip hijau biar operator sadar angkanya udah masuk
-                inputTarget.classList.add('ring-2', 'ring-green-500', 'bg-green-50');
+                    inputTarget.classList.add('ring-2', 'ring-green-500', 'bg-green-50');
                 setTimeout(() => {
                     inputTarget.classList.remove('ring-2', 'ring-green-500', 'bg-green-50');
                 }, 800);

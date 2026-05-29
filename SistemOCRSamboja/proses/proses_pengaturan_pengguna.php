@@ -1,13 +1,11 @@
 <?php
 session_start();
 require_once 'config.php';
+require_once 'csrf.php';
 
 date_default_timezone_set('Asia/Jakarta');
 
-if (
-    !isset($_SESSION['user_id']) ||
-    strtolower($_SESSION['role']) !== 'admin'
-) {
+if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role']) !== 'admin') {
     header('Location: ../index.php');
     exit;
 }
@@ -17,9 +15,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+csrf_verify();
+
 $action = $_POST['action'] ?? '';
 
-// TAMBAH PENGGUNA
+// Tambah pengguna baru
 if ($action === 'tambah') {
     $username = trim($_POST['username'] ?? '');
     $nama     = trim($_POST['nama_lengkap'] ?? '');
@@ -46,12 +46,7 @@ if ($action === 'tambah') {
 
     $hash = password_hash($password, PASSWORD_DEFAULT);
 
-    $stmt = mysqli_prepare(
-        $db,
-        "INSERT INTO staf_kecamatan 
-         (username, password_hash, nama_lengkap, role, status, created_at)
-         VALUES (?, ?, ?, ?, ?, NOW())"
-    );
+    $stmt = mysqli_prepare($db, "INSERT INTO staf_kecamatan (username, password_hash, nama_lengkap, role, status, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
     mysqli_stmt_bind_param($stmt, 'sssss', $username, $hash, $nama, $role, $status);
 
     if (mysqli_stmt_execute($stmt)) {
@@ -64,9 +59,9 @@ if ($action === 'tambah') {
     exit;
 }
 
-// EDIT PENGGUNA
+// Edit data pengguna
 if ($action === 'edit') {
-    $id       = (int)($_POST['id'] ?? 0);
+    $id       = (int) ($_POST['id'] ?? 0);
     $username = trim($_POST['username'] ?? '');
     $nama     = trim($_POST['nama_lengkap'] ?? '');
     $password = $_POST['password'] ?? '';
@@ -75,25 +70,16 @@ if ($action === 'edit') {
 
     if ($password !== '') {
         $hash = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = mysqli_prepare(
-            $db,
-            "UPDATE staf_kecamatan
-             SET username=?, nama_lengkap=?, password_hash=?, role=?, status=?
-             WHERE id=?"
-        );
+        $stmt = mysqli_prepare($db, "UPDATE staf_kecamatan SET username=?, nama_lengkap=?, password_hash=?, role=?, status=? WHERE id=?");
         mysqli_stmt_bind_param($stmt, 'sssssi', $username, $nama, $hash, $role, $status, $id);
     } else {
-        $stmt = mysqli_prepare(
-            $db,
-            "UPDATE staf_kecamatan
-             SET username=?, nama_lengkap=?, role=?, status=?
-             WHERE id=?"
-        );
+        $stmt = mysqli_prepare($db, "UPDATE staf_kecamatan SET username=?, nama_lengkap=?, role=?, status=? WHERE id=?");
         mysqli_stmt_bind_param($stmt, 'ssssi', $username, $nama, $role, $status, $id);
     }
 
     if (mysqli_stmt_execute($stmt)) {
-        if ($id === (int)$_SESSION['user_id']) {
+        // Sinkronkan session jika admin mengedit akunnya sendiri
+        if ($id === (int) $_SESSION['user_id']) {
             $_SESSION['username']     = $username;
             $_SESSION['nama_lengkap'] = $nama;
             $_SESSION['role']         = $role;
@@ -107,12 +93,11 @@ if ($action === 'edit') {
     exit;
 }
 
-
-//    HAPUS PENGGUNA
+// Hapus pengguna
 if (isset($_POST['hapus_id'])) {
-    $id = (int)$_POST['hapus_id'];
+    $id = (int) $_POST['hapus_id'];
 
-    if ($id === (int)$_SESSION['user_id']) {
+    if ($id === (int) $_SESSION['user_id']) {
         header('Location: ../admin/manajemen_operator.php?error=Tidak bisa menghapus akun sendiri');
         exit;
     }

@@ -1,5 +1,19 @@
 import re
 
+# [FIX OPTIMASI]: Kamusnya ditaruh di LUAR looping biar laptop lu enteng!
+KAMUS_REPLACE = str.maketrans({
+    "O": "0", "o": "0", "D": "0", "d": "0", "U": "0", "u": "0", "Q": "0", "q": "0", "C": "0", "c": "0",
+    "I": "1", "i": "1", "L": "1", "l": "1", "|": "1", "]": "1", "[": "1", "!": "1", "T": "1", "t": "1",
+    "B": "8", "&": "8",
+    "b": "6", "G": "6", "g": "6", 
+    "S": "5", "s": "5", "$": "5",
+    "Z": "2", "z": "2",
+    "A": "4", "a": "4",
+    "J": "7", "j": "7", "?": "7",
+    "E": "3", "e": "3",
+    "P": "9", "p": "9"
+})
+
 def count_ktp_keywords(ocr_results):
     ktp_keywords = [
         "PROVINSI", "KABUPATEN", "KOTA", "NIK",
@@ -12,18 +26,14 @@ def count_ktp_keywords(ocr_results):
     for item in ocr_results:
         if not item or len(item) < 2:
             continue
-
         text = item[1].upper()
         if any(k in text for k in ktp_keywords):
             found += 1
-
     return found
-
 
 def is_valid_nik_pattern(nik_string):
     if not nik_string or len(nik_string) != 16 or not nik_string.isdigit():
         return False
-
     try:
         dd = int(nik_string[6:8])
         mm = int(nik_string[8:10])
@@ -32,7 +42,6 @@ def is_valid_nik_pattern(nik_string):
         return valid_day and valid_month
     except:
         return False
-
 
 def filter_and_cleanse_nik(ocr_results):
     keyword_count = count_ktp_keywords(ocr_results)
@@ -62,28 +71,21 @@ def filter_and_cleanse_nik(ocr_results):
         except:
             score_val = 0.0
 
-        raw = text.upper()
-        full_text_combined += raw + " "
+        # Simpan buat fallback (dibesarin semua gapapa buat digabung)
+        full_text_combined += text + " " 
 
-        for word in ["NIK", "PROVINSI", "KOTA", "KABUPATEN", "KAB", "ISLAM"]:
-            raw = raw.replace(word, "")
+        # --- FIX: Bersihin kata pakai teks asli (bukan yang udah di-upper)
+        clean_text = text
+        for word in ["NIK", "PROVINSI", "KOTA", "KABUPATEN", "KAB", "ISLAM", "nik", "provinsi", "kota", "kabupaten", "kab", "islam"]:
+            clean_text = clean_text.replace(word, "")
 
+        # --- FIX: Panggil kamus global
         clean = (
-            raw.replace(" ", "")
+            clean_text.replace(" ", "")
             .replace(":", "")
             .replace("-", "")
             .replace(".", "")
-            .translate(str.maketrans({
-                    "O": "0", "D": "0", "U": "0", "Q": "0", "C": "0",
-                    "I": "1", "L": "1", "|": "1", "]": "1", "!": "1", "T": "1",
-                    "B": "8", "&": "8",
-                    "S": "5", "$": "5",
-                    "G": "6",
-                    "Z": "2",
-                    "A": "4",
-                    "J": "7", "?": "7",
-                    "E": "3"
-            }))
+            .translate(KAMUS_REPLACE)
         )
 
         match = nik_regex_perfect.search(clean)
@@ -102,17 +104,7 @@ def filter_and_cleanse_nik(ocr_results):
             .replace(":", "")
             .replace("-", "")
             .replace(".", "")
-            .translate(str.maketrans({
-                    "O": "0", "D": "0", "U": "0", "Q": "0", "C": "0",
-                    "I": "1", "L": "1", "|": "1", "]": "1", "!": "1", "T": "1",
-                    "B": "8", "&": "8",
-                    "S": "5", "$": "5",
-                    "G": "6",
-                    "Z": "2",
-                    "A": "4",
-                    "J": "7", "?": "7",
-                    "E": "3"
-            }))
+            .translate(KAMUS_REPLACE)
         )
 
         fallback = nik_regex_perfect.search(clean_full)
@@ -132,12 +124,9 @@ def filter_and_cleanse_nik(ocr_results):
         "genap_16_digit": best_nik is not None
     }
 
-    # --- (GATEKEEPER FINAL - VERSI WARAS DAN AMAN) ---
     if best_nik:
-        # SKENARIO A: Kalau ada kata kunci (KTP Jelas), LANGSUNG MERAH!
         if keyword_count >= 1:
             return (best_nik, best_score, "Success", debug_data)
-        # SKENARIO B: Kalau KTP Burem (Gak ada kata kunci), baru tes logika tanggal lahir
         else:
             if is_valid_nik_pattern(best_nik):
                 return (best_nik, best_score, "Success (Blurry KTP - Valid Date Pattern)", debug_data)

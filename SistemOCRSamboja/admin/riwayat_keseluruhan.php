@@ -1,18 +1,16 @@
-<?php
+﻿<?php
 session_start();
 require_once '../proses/config.php';
+require_once '../proses/csrf.php';
 
-// 1. Cek Login & Role Admin
 if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role']) !== 'admin') {
     header('Location: ../index.php');
     exit;
 }
 
-// 2. Ambil Parameter Filter
 $filterOp   = $_GET['operator_id'] ?? '';
 $filterStat = $_GET['status'] ?? '';
 
-// 3. Ambil List Operator untuk Dropdown
 $listOperator = [];
 $resOp = mysqli_query(
     $db,
@@ -27,41 +25,41 @@ if ($resOp) {
     }
 }
 
-// 4. Susun Query Filter
-$where = ["1=1"];
+// Susun kondisi filter dengan prepared statement
+$conditions = ["1=1"];
+$params     = [];
+$types      = "";
 
 if ($filterOp !== '') {
-    $where[] = "lo.id_staf = '" . mysqli_real_escape_string($db, $filterOp) . "'";
+    $conditions[] = "lo.id_staf = ?";
+    $params[]     = (int) $filterOp;
+    $types       .= "i";
 }
 if ($filterStat !== '') {
-    $where[] = "lo.status_proses = '" . mysqli_real_escape_string($db, $filterStat) . "'";
+    $conditions[] = "lo.status_proses = ?";
+    $params[]     = $filterStat;
+    $types       .= "s";
 }
 
-$whereSql = implode(' AND ', $where);
+$whereSql = implode(' AND ', $conditions);
 
-// 5. Hitung Summary (Total Data)
-$summary = [
-    'total'   => 0,
-    'sukses'  => 0,
-    'gagal'   => 0,
-    'koreksi' => 0
-];
+// Hitung summary dengan prepared statement
+$summary = ['total' => 0, 'sukses' => 0, 'gagal' => 0, 'koreksi' => 0];
 
-$sqlSummary = "
-    SELECT
-        COUNT(*) AS total,
-        SUM(CASE WHEN status_proses IN ('finalized','Berhasil') THEN 1 ELSE 0 END) AS sukses,
-        SUM(CASE WHEN status_proses IN ('failed','Gagal','error_php') THEN 1 ELSE 0 END) AS gagal,
-        SUM(CASE WHEN status_proses IN ('pending_review','Perlu Koreksi') THEN 1 ELSE 0 END) AS koreksi
-    FROM log_ocr lo
-    WHERE $whereSql
-";
-$resSum = mysqli_query($db, $sqlSummary);
-if ($resSum) {
+$sqlSummary = "SELECT COUNT(*) AS total, SUM(CASE WHEN status_proses IN ('finalized','Berhasil') THEN 1 ELSE 0 END) AS sukses, SUM(CASE WHEN status_proses IN ('failed','Gagal','error_php') THEN 1 ELSE 0 END) AS gagal, SUM(CASE WHEN status_proses IN ('pending_review','Perlu Koreksi') THEN 1 ELSE 0 END) AS koreksi FROM log_ocr lo WHERE $whereSql";
+
+if (!empty($params)) {
+    $stmtSum = mysqli_prepare($db, $sqlSummary);
+    mysqli_stmt_bind_param($stmtSum, $types, ...$params);
+    mysqli_stmt_execute($stmtSum);
+    $resSum  = mysqli_stmt_get_result($stmtSum);
+    $summary = mysqli_fetch_assoc($resSum);
+    mysqli_stmt_close($stmtSum);
+} else {
+    $resSum  = mysqli_query($db, $sqlSummary);
     $summary = mysqli_fetch_assoc($resSum);
 }
 
-// 6. Pagination Logic
 $perPage    = 10;
 $page       = max(1, (int)($_GET['page'] ?? 1));
 $totalRows  = (int)$summary['total'];
@@ -71,29 +69,24 @@ $totalPages = max(1, ceil($totalRows / $perPage));
 $start = ($page - 1) * $perPage;
 if ($start < 0) $start = 0;
 
-// 7. Ambil Data Tabel
+// Ambil data tabel dengan prepared statement
 $riwayat = [];
-$sqlData = "
-    SELECT
-        lo.log_id,
-        lo.waktu_upload,
-        lo.nama_file_asli,
-        COALESCE(lo.nik_final, lo.nik_terdeteksi) AS nik,
-        lo.status_proses,
-        lo.skor_kepercayaan,
-        sk.nama_lengkap AS operator
-    FROM log_ocr lo
-    LEFT JOIN staf_kecamatan sk ON lo.id_staf = sk.id
-    WHERE $whereSql
-    ORDER BY lo.waktu_upload DESC
-    LIMIT $start, $perPage
-";
-$resData = mysqli_query($db, $sqlData);
+$sqlData = "SELECT lo.log_id, lo.waktu_upload, lo.nama_file_asli, COALESCE(lo.nik_final, lo.nik_terdeteksi) AS nik, lo.status_proses, lo.skor_kepercayaan, sk.nama_lengkap AS operator FROM log_ocr lo LEFT JOIN staf_kecamatan sk ON lo.id_staf = sk.id WHERE $whereSql ORDER BY lo.waktu_upload DESC LIMIT ?, ?";
+
+$limitParams  = array_merge($params, [$start, $perPage]);
+$limitTypes   = $types . 'ii';
+
+$stmtData = mysqli_prepare($db, $sqlData);
+mysqli_stmt_bind_param($stmtData, $limitTypes, ...$limitParams);
+mysqli_stmt_execute($stmtData);
+$resData = mysqli_stmt_get_result($stmtData);
+
 if ($resData) {
     while ($row = mysqli_fetch_assoc($resData)) {
         $riwayat[] = $row;
     }
 }
+mysqli_stmt_close($stmtData);
 
 // Helper Badge Status
 function badgeAdminStatus($status)

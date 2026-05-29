@@ -1,4 +1,7 @@
-<?php session_start(); // Mulai session untuk menampilkan pesan error ?>
+<?php
+session_start();
+require_once 'proses/csrf.php';
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -53,8 +56,8 @@
     ?>
 
     <form action="proses/proses_login_dan_register.php" method="POST" class="space-y-6">
-      <!-- Input tersembunyi untuk menandai aksi 'register' -->
       <input type="hidden" name="action" value="register">
+      <?php echo csrf_field(); ?>
       
       <div>
         <label class="block text-gray-700 font-medium mb-2 text-sm">Username Admin Baru</label>

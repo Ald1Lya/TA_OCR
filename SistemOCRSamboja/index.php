@@ -12,6 +12,7 @@ if (isset($_SESSION['user_id'])) {
 }
 
 require_once 'proses/config.php';
+require_once 'proses/csrf.php';
 
 // Kontrol tampilan tombol daftar
 $tampilkan_tombol_daftar = true;
@@ -53,7 +54,7 @@ if ($db) {
         font-style: normal;
     }
 
-    /* Deklarasi Font Inter Bold (700) -> PERHATIKAN PATHNYA SESUAIKAN DENGAN FOLDER LU */
+    /* Deklarasi Font Inter Bold (700) */
     @font-face {
         font-family: 'Inter';
         src: url('../assets/fonts/static/Inter-Bold.ttf') format('truetype');
@@ -105,6 +106,7 @@ if ($db) {
 
     <form action="proses/proses_login_dan_register.php" method="POST" class="space-y-6">
       <input type="hidden" name="action" value="login">
+      <?php echo csrf_field(); ?>
       
      <div>
         <label class="block text-gray-700 font-medium mb-2 text-sm">Username</label>

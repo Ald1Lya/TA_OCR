@@ -1,13 +1,11 @@
 <?php
 session_start();
 
-// Cek login
 if (!isset($_SESSION['user_id'])) {
     header('Location: index.php');
     exit;
 }
 
-// Redirect admin ke dashboard admin
 if (strtolower($_SESSION['role']) === 'admin') {
     header('Location: admin/dashboard_admin.php');
     exit;
@@ -15,11 +13,8 @@ if (strtolower($_SESSION['role']) === 'admin') {
 
 require_once 'proses/config.php';
 
-// Ambil ID dari session
-$user_id = $_SESSION['user_id'];
-
-// Data user
-$user = [];
+$user_id    = $_SESSION['user_id'];
+$user       = [];
 $last_login = 'Belum tersedia';
 
 $sql_user = "SELECT username, role, last_login 
@@ -41,7 +36,7 @@ if ($stmt) {
     mysqli_stmt_close($stmt);
 }
 
-// --- FIX 1: STATISTIK OCR PRIBADI ---
+// Statistik OCR pribadi
 $stats = [
     'total_proses'   => 0,
     'total_berhasil' => 0,
@@ -75,13 +70,11 @@ $total_gagal    = (int)$stats['total_gagal'];
 $total_pending  = (int)$stats['total_pending'];
 
 $tingkat_keberhasilan = ($total_proses > 0) ? ($total_berhasil / $total_proses) * 100 : 0;
-$avg_akurasi = ((float)$stats['avg_skor']) * 100;
+$avg_akurasi          = ((float) $stats['avg_skor']) * 100;
 
-// Data chart pie
 $pie_data_values = [$total_berhasil, $total_gagal, $total_pending];
 $pie_data_labels = ['Berhasil (Final)', 'Gagal', 'Perlu Cek'];
 
-// --- FIX 2: RIWAYAT OCR PRIBADI (5 Terbaru) ---
 $riwayat_terkini = [];
 $sql_riwayat = "SELECT 
     lo.waktu_upload AS waktu_proses,
@@ -107,7 +100,7 @@ if ($result_riwayat) {
 }
 mysqli_stmt_close($stmt_riwayat);
 
-// --- FIX 3: GRAFIK VOLUME HARIAN PRIBADI ---
+// Grafik volume OCR harian pribadi
 $bar_labels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 $bar_data   = array_fill(0, 7, 0);
 
@@ -133,7 +126,6 @@ if ($result_ocr_harian) {
 }
 mysqli_stmt_close($stmt_harian);
 
-// Helper badge status
 function getStatusBadge($status) {
     switch ($status) {
         case 'finalized': return ['text' => 'Berhasil', 'class' => 'bg-green-100 text-green-700'];

@@ -1,72 +1,81 @@
-<?php
+﻿<?php
 session_start();
+require_once '../proses/config.php';
+require_once '../proses/csrf.php';
 
-// 1. Cek Admin
 if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role']) !== 'admin') {
     header('Location: ../index.php');
     exit;
 }
 
-require_once '../proses/config.php';
-
-// --- KONFIGURASI PATH (JANGAN DIUBAH) ---
-$bat_file = "C:/laragon/www/TugasAkhirCapstone/SistemOCRSamboja/PYTHON_OCR/start_ocr.bat";
-$log_file = "C:/laragon/www/TugasAkhirCapstone/SistemOCRSamboja/PYTHON_OCR/ocr_log.txt";
+// Path dinamis berdasarkan lokasi file ini
+$ocr_dir  = realpath(__DIR__ . '/../PYTHON_OCR');
+$bat_file = $ocr_dir . '/start_ocr.bat';
+$log_file = $ocr_dir . '/ocr_log.txt';
+$pid_file = $ocr_dir . '/ocr_server.pid';
 $port_flask = 5000;
 
-// Fungsi Cek Status Port
-function isOcrRunning($host, $port) {
+function isOcrRunning(string $host, int $port): bool {
     $connection = @fsockopen($host, $port, $errno, $errstr, 1);
     if (is_resource($connection)) {
         fclose($connection);
-        return true; 
+        return true;
     }
-    return false; 
+    return false;
 }
 
-// --- AJAX HANDLER (UNTUK UPDATE REALTIME TANPA RELOAD) ---
 if (isset($_GET['ajax_status'])) {
     header('Content-Type: application/json');
     $running = isOcrRunning('127.0.0.1', $port_flask);
-    
-    // Baca 5 baris terakhir log
-    $logs = ["Menunggu sistem..."];
+
+    $logs = ['Menunggu sistem...'];
     if (file_exists($log_file)) {
         $lines = file($log_file);
-        $logs = array_slice($lines, -5); // Ambil 5 terakhir
-        // Bersihkan whitespace
-        $logs = array_map('trim', $logs);
+        $logs  = array_map('trim', array_slice($lines, -5));
     }
 
-    echo json_encode([
-        'status' => $running,
-        'logs' => $logs
-    ]);
+    echo json_encode(['status' => $running, 'logs' => $logs]);
     exit;
 }
 
 $status = isOcrRunning('127.0.0.1', $port_flask);
 
-// LOGIKA TOMBOL 
 if (isset($_POST['action'])) {
+    csrf_verify();
+
     if ($_POST['action'] === 'start') {
         if (!$status) {
-            // Reset log 
-            if(file_exists($log_file)) file_put_contents($log_file, "--- Booting System ---\n");
-            
-            pclose(popen("start /B cmd /c \"" . $bat_file . "\"", "r"));
-            sleep(2); 
-            $_SESSION['flash_msg'] = ['type'=>'success', 'text'=>'Sistem OCR Berhasil Dinyalakan!'];
+            if (file_exists($log_file)) {
+                file_put_contents($log_file, "--- Booting System ---\n");
+            }
+            // Jalankan bat file di background dan simpan PID prosesnya
+            $cmd = 'start /B cmd /c "' . $bat_file . '" & echo %ERRORLEVEL%';
+            pclose(popen($cmd, 'r'));
+            sleep(2);
+
+                        $pid_raw = shell_exec('for /f "tokens=2" %a in (\'tasklist /fi "imagename eq python.exe" /fo list ^| findstr "PID"\') do @echo %a');
+            $pid     = (int) trim($pid_raw ?? '0');
+            if ($pid > 0) {
+                file_put_contents($pid_file, $pid);
+            }
+
+            $_SESSION['flash_msg'] = ['type' => 'success', 'text' => 'Sistem OCR Berhasil Dinyalakan!'];
         }
     } elseif ($_POST['action'] === 'stop') {
         if ($status) {
-            shell_exec("taskkill /F /IM python.exe");
+                        if (file_exists($pid_file)) {
+                $pid = (int) file_get_contents($pid_file);
+                if ($pid > 0) {
+                    shell_exec("taskkill /F /PID " . $pid);
+                }
+                @unlink($pid_file);
+            }
             sleep(1);
-            $_SESSION['flash_msg'] = ['type'=>'success', 'text'=>'Sistem OCR Berhasil Dimatikan.'];
+            $_SESSION['flash_msg'] = ['type' => 'success', 'text' => 'Sistem OCR Berhasil Dimatikan.'];
         }
     }
- 
-    header("Location: kontrol_sistem.php");
+
+    header('Location: kontrol_sistem.php');
     exit;
 }
 ?>
@@ -164,6 +173,7 @@ if (isset($_POST['action'])) {
           
           <form method="POST" id="controlForm" class="space-y-4">
               <input type="hidden" name="action" id="actionInput">
+              <?php echo csrf_field(); ?>
               
               <div id="btn-container">
                  <button type="button" disabled class="w-full py-5 bg-gray-100 text-gray-400 rounded-xl font-bold flex items-center justify-center gap-3 cursor-not-allowed border border-gray-200 shadow-sm">
@@ -277,7 +287,7 @@ if (isset($_POST['action'])) {
               
                 const txtStatus = document.getElementById('text-status');
                 txtStatus.className = isRunning ? 'text-green-500 font-mono' : 'text-red-400 font-mono';
-                txtStatus.innerText = isRunning ? '● Running' : '● Idle';
+                txtStatus.innerText = isRunning ? ' Running' : ' Idle';
 
             })
             .catch(err => console.error(err));

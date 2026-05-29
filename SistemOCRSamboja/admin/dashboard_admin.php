@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 require_once '../proses/config.php';
 
@@ -22,8 +22,7 @@ $totalScan7Hari = 0;
 $aktivitas     = [];
 
 if ($db) {
-    // 1. Ambil Total Operator
-    $qOperator = mysqli_query(
+        $qOperator = mysqli_query(
         $db,
         "SELECT COUNT(id) AS total FROM staf_kecamatan WHERE role = 'operator'"
     );
@@ -31,8 +30,7 @@ if ($db) {
         $totalOperator = mysqli_fetch_assoc($qOperator)['total'];
     }
 
-    // 2. Ambil Total Scan (DIFILTER HANYA 7 HARI TERAKHIR)
-    $qScan = mysqli_query(
+        $qScan = mysqli_query(
         $db,
         "SELECT COUNT(log_id) AS total FROM log_ocr WHERE waktu_upload >= DATE_SUB(NOW(), INTERVAL 7 DAY)"
     );
@@ -40,8 +38,7 @@ if ($db) {
         $totalScan7Hari = mysqli_fetch_assoc($qScan)['total'];
     }
 
-    // 3. Ambil 5 Aktivitas Terbaru
-    $qAktivitas = mysqli_query(
+        $qAktivitas = mysqli_query(
         $db,
         "SELECT 
             lo.waktu_upload,
@@ -197,7 +194,7 @@ function statusBadge($status)
         <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h2 class="text-lg font-bold">Aktivitas Scan Terbaru</h2>
             <a href="riwayat_keseluruhan.php" class="text-sm font-bold text-green-600 hover:underline">
-                Lihat Semua Riwayat →
+                Lihat Semua Riwayat Scan
             </a>
         </div>
 
