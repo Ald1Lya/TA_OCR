@@ -1,6 +1,10 @@
 import re
 
-# [FIX OPTIMASI]: Kamusnya ditaruh di LUAR looping biar laptop lu enteng!
+"""
+Kamus Subtitusi Karakter (Koreksi OCR).
+Dideklarasikan secara global untuk mengoptimalkan penggunaan memori dan mengurangi beban komputasi saat iterasi.
+Memetakan karakter alfabet yang mirip secara visual (misal: 'O', 'I', 'B') ke ekuivalen angka.
+"""
 KAMUS_REPLACE = str.maketrans({
     "O": "0", "o": "0", "D": "0", "d": "0", "U": "0", "u": "0", "Q": "0", "q": "0", "C": "0", "c": "0",
     "I": "1", "i": "1", "L": "1", "l": "1", "|": "1", "]": "1", "[": "1", "!": "1", "T": "1", "t": "1",
@@ -44,6 +48,16 @@ def is_valid_nik_pattern(nik_string):
         return False
 
 def filter_and_cleanse_nik(ocr_results):
+    """
+    Mengekstrak dan memvalidasi 16 digit NIK dari hasil raw OCR.
+    Menerapkan pemfilteran heuristik, substitusi karakter, dan pemeriksaan validitas.
+    
+    Argumen:
+        ocr_results (list): Data raw bounding box dan teks dari EasyOCR.
+        
+    Kembalian:
+        tuple: (best_nik, best_score, status_message, debug_data)
+    """
     keyword_count = count_ktp_keywords(ocr_results)
     nik_regex_perfect = re.compile(r'\d{16}')
 
@@ -71,15 +85,15 @@ def filter_and_cleanse_nik(ocr_results):
         except:
             score_val = 0.0
 
-        # Simpan buat fallback (dibesarin semua gapapa buat digabung)
+        # Mengakumulasi teks lengkap untuk pemrosesan fallback
         full_text_combined += text + " " 
 
-        # --- FIX: Bersihin kata pakai teks asli (bukan yang udah di-upper)
+        # Menghapus kata kunci KTP yang umum menggunakan format teks asli
         clean_text = text
         for word in ["NIK", "PROVINSI", "KOTA", "KABUPATEN", "KAB", "ISLAM", "nik", "provinsi", "kota", "kabupaten", "kab", "islam"]:
             clean_text = clean_text.replace(word, "")
 
-        # --- FIX: Panggil kamus global
+        # Menerapkan kamus translasi global dan menghapus karakter pemisah
         clean = (
             clean_text.replace(" ", "")
             .replace(":", "")

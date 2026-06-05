@@ -5,6 +5,7 @@ require_once 'proses/csrf.php';
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <link rel="icon" type="image/png" href="../assetimage/logo.png" />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Registrasi Admin - Sistem OCR KTP</title>

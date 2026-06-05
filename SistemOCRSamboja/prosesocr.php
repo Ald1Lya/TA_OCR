@@ -1,6 +1,18 @@
+<?php
+session_start();
+if (!isset($_SESSION['user_id'])) {
+    header('Location: index.php');
+    exit;
+}
+if (strtolower($_SESSION['role']) === 'admin') {
+    header('Location: admin/dashboard_admin.php');
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <link rel="icon" type="image/png" href="../assetimage/logo.png" />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Proses OCR - Sistem KTP</title>

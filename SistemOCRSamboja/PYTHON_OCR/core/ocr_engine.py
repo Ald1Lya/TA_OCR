@@ -3,8 +3,11 @@ import warnings
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
-# Model EasyOCR dimuat sekali saat modul pertama kali diimpor (singleton).
-# Bahasa 'id' (Indonesia) dipilih karena KTP menggunakan teks Bahasa Indonesia.
+"""
+Inisialisasi Model EasyOCR (Pola Singleton).
+Model bahasa 'id' (Indonesia) dimuat sekali saat impor modul untuk meminimalkan latensi.
+Hal ini mencegah overhead pemuatan ulang model deep learning ke memori untuk setiap permintaan OCR.
+"""
 try:
     reader = easyocr.Reader(['id'])
 except Exception as e:

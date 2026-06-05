@@ -1,12 +1,18 @@
-﻿<?php
+<?php
 session_start();
 date_default_timezone_set('Asia/Jakarta');
 // AJAX: kembalikan 5 riwayat terbaru milik operator (dipanggil setiap 5 detik)
 if (isset($_GET['ajax_history'])) {
-    require_once 'proses/config.php'; // Pastikan path config benar
-    $user_id = $_SESSION['user_id'];
-    
-        $sql = "SELECT lo.log_id, lo.waktu_upload, lo.nama_file_asli, lo.status_proses 
+    // Guard: pastikan user sudah login sebelum menyentuh database
+    if (!isset($_SESSION['user_id'])) {
+        echo '';
+        exit;
+    }
+
+    require_once 'proses/config.php';
+    $user_id = (int) $_SESSION['user_id'];
+
+    $sql  = "SELECT lo.log_id, lo.waktu_upload, lo.nama_file_asli, lo.status_proses
             FROM log_ocr lo WHERE lo.id_staf = ? ORDER BY lo.waktu_upload DESC LIMIT 5";
     $stmt = mysqli_prepare($db, $sql);
     mysqli_stmt_bind_param($stmt, "i", $user_id);
@@ -16,9 +22,9 @@ if (isset($_GET['ajax_history'])) {
     $output = '';
     if (mysqli_num_rows($result) > 0) {
         while ($row = mysqli_fetch_assoc($result)) {
-                        $badgeClass = 'bg-gray-100 text-gray-600';
+            $badgeClass = 'bg-gray-100 text-gray-600';
             $statusText = 'Pending';
-            
+
             if ($row['status_proses'] === 'finalized' || $row['status_proses'] === 'Berhasil') {
                 $badgeClass = 'bg-green-100 text-green-700 border border-green-200';
                 $statusText = 'Berhasil';
@@ -30,7 +36,7 @@ if (isset($_GET['ajax_history'])) {
                 $statusText = 'Gagal';
             }
 
-                        $selisih = time() - strtotime($row['waktu_upload']);
+            $selisih = time() - strtotime($row['waktu_upload']);
             if ($selisih < 60) $waktu = "Baru saja";
             elseif ($selisih < 3600) $waktu = floor($selisih / 60) . " menit lalu";
             elseif ($selisih < 86400) $waktu = floor($selisih / 3600) . " jam lalu";
@@ -39,13 +45,13 @@ if (isset($_GET['ajax_history'])) {
             $output .= '
             <div class="flex items-center justify-between border-b border-gray-100 pb-3 last:border-0 animate-fade-in">
                 <div class="max-w-[150px]">
-                    <p class="text-sm font-semibold text-gray-800 truncate" title="'.htmlspecialchars($row['nama_file_asli']).'">
-                        '.htmlspecialchars($row['nama_file_asli']).'
+                    <p class="text-sm font-semibold text-gray-800 truncate" title="' . htmlspecialchars($row['nama_file_asli']) . '">
+                        ' . htmlspecialchars($row['nama_file_asli']) . '
                     </p>
-                    <p class="text-[10px] text-gray-400">'.$waktu.'</p>
+                    <p class="text-[10px] text-gray-400">' . $waktu . '</p>
                 </div>
-                <span class="text-[10px] font-bold px-2 py-1 rounded-md uppercase shadow-sm '.$badgeClass.'">
-                    '.$statusText.'
+                <span class="text-[10px] font-bold px-2 py-1 rounded-md uppercase shadow-sm ' . $badgeClass . '">
+                    ' . $statusText . '
                 </span>
             </div>';
         }
@@ -78,6 +84,7 @@ if (!$user || strtolower(trim($user['status'])) !== 'aktif') {
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <link rel="icon" type="image/png" href="../assetimage/logo.png" />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Upload KTP - OCR System</title>

@@ -12,15 +12,36 @@ if (!isset($_SESSION['user_id'])) {
 $pdf = new FPDF('L', 'mm', 'A4');
 $pdf->AddPage();
 
-$pdf->SetFont('Arial', 'B', 16);
-$pdf->Cell(0, 10, 'RIWAYAT PROSES OCR KTP', 0, 1, 'C');
+// --- KOP SURAT ---
+$logo_path = realpath(__DIR__ . '/../../assetimage/logo.png');
+if ($logo_path && file_exists($logo_path)) {
+    $pdf->Image($logo_path, 15, 10, 20);
+}
+
+$pdf->SetFont('Arial', 'B', 14);
+$pdf->Cell(0, 6, 'PEMERINTAH KABUPATEN KUTAI KARTANEGARA', 0, 1, 'C');
+$pdf->SetFont('Arial', 'B', 18);
+$pdf->Cell(0, 8, 'KECAMATAN SAMBOJA KUALA', 0, 1, 'C');
 $pdf->SetFont('Arial', '', 10);
-$pdf->Cell(0, 5, 'Dicetak pada: ' . date('d-m-Y H:i'), 0, 1, 'C');
+$pdf->Cell(0, 5, 'Jalan Poros Balikpapan - Handil, Kecamatan Samboja Kuala, Kode Pos 75271', 0, 1, 'C');
+
+// Garis Kop Surat
+$pdf->SetLineWidth(0.8);
+$pdf->Line(10, 33, 287, 33);
+$pdf->SetLineWidth(0.3);
+$pdf->Line(10, 34.5, 287, 34.5);
 $pdf->Ln(10);
+// -----------------
+
+$pdf->SetFont('Arial', 'B', 14);
+$pdf->Cell(0, 8, 'LAPORAN RIWAYAT EKSTRAKSI NIK (SISTEM OCR)', 0, 1, 'C');
+$pdf->SetFont('Arial', '', 10);
+$pdf->Cell(0, 5, 'Dicetak pada: ' . date('d F Y, H:i') . ' WITA', 0, 1, 'C');
+$pdf->Ln(8);
 
 $pdf->SetFont('Arial', 'B', 10);
-$pdf->SetFillColor(230, 230, 230);
-$pdf->SetDrawColor(50, 50, 100);
+$pdf->SetFillColor(230, 240, 255); // Warna biru muda elegan
+$pdf->SetDrawColor(150, 150, 150);
 
 // Lebar kolom dalam mm (landscape A4)
 $w      = [10, 35, 80, 35, 35, 20, 60];

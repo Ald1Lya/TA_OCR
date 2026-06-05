@@ -87,11 +87,10 @@ def text_recognition_pipeline(image_path: str) -> dict:
     draw_and_save_bounding_box(image_path, optimized_img, ocr_results, nik)
 
     # Bebaskan memori gambar besar setelah pipeline selesai
-    try:
+    if 'optimized_img' in locals():
         del optimized_img
+    if 'preprocessed_img' in locals():
         del preprocessed_img
-    except Exception:
-        pass
 
     if nik:
         return {"nik": nik, "score": float(final_score), "status": "success", "notes": reason, "raw_text": raw_text}

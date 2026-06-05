@@ -80,6 +80,6 @@
     </form>
   </div>
 
-  <script src="/TUGASAKHIRCAPSTONE/assets/js/feather.min.js"></script>
+  <script src="../../assets/js/feather.min.js"></script>
   <script>feather.replace();</script>
 </aside>

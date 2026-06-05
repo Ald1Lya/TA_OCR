@@ -47,7 +47,8 @@ $output = fopen('php://output', 'w');
 // BOM UTF-8 agar Excel membaca encoding dengan benar
 fwrite($output, "\xEF\xBB\xBF");
 
-fputcsv($output, ['No', 'Waktu Proses', 'Nama File', 'NIK', 'Status', 'Akurasi', 'Operator']);
+// Gunakan delimiter titik koma (;) agar otomatis rapi dalam kolom di Excel regional Indonesia
+fputcsv($output, ['No', 'Waktu Proses', 'Nama File', 'NIK', 'Status', 'Akurasi', 'Operator'], ';');
 
 $no = 1;
 
@@ -67,7 +68,7 @@ while ($row = mysqli_fetch_assoc($result)) {
     // Prefix ="..." mencegah Excel mengubah NIK menjadi notasi ilmiah
     $nik      = $row['nik'] ? '="' . $row['nik'] . '"' : '-';
 
-    fputcsv($output, [$no++, $waktu, $row['nama_file_asli'], $nik, $status, $akurasi, $operator]);
+    fputcsv($output, [$no++, $waktu, $row['nama_file_asli'], $nik, $status, $akurasi, $operator], ';');
 }
 
 fclose($output);

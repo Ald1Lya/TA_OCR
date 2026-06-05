@@ -31,6 +31,7 @@ if ($db) {
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <link rel="icon" type="image/png" href="../assetimage/logo.png" />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Login - Sistem OCR KTP</title>
@@ -38,30 +39,6 @@ if ($db) {
   <link rel="stylesheet" href="../assets/css/style.css" />
 
   <style>
-    /* Deklarasi Font Inter Regular (400) */
-    @font-face {
-        font-family: 'Inter';
-        src: url('../assets/fonts/Inter-Regular.ttf') format('truetype');
-        font-weight: 400;
-        font-style: normal;
-    }
-
-    /* Deklarasi Font Inter SemiBold (600) */
-    @font-face {
-        font-family: 'Inter';
-        src: url('../assets/fonts/Inter-SemiBold.ttf') format('truetype');
-        font-weight: 600;
-        font-style: normal;
-    }
-
-    /* Deklarasi Font Inter Bold (700) */
-    @font-face {
-        font-family: 'Inter';
-        src: url('../assets/fonts/static/Inter-Bold.ttf') format('truetype');
-        font-weight: 700;
-        font-style: normal;
-    }
-
     /* Terapkan ke body */
     body { 
         font-family: 'Inter', sans-serif; 

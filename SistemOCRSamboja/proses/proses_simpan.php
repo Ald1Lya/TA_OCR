@@ -19,7 +19,8 @@ $log_id  = isset($_POST['log_id']) ? (int) $_POST['log_id'] : 0;
 $user_id = (int) $_SESSION['user_id'];
 
 if ($log_id <= 0) {
-    die('log_id tidak valid.');
+    header('Location: ../riwayat.php?msg=gagal');
+    exit;
 }
 
 // Finalisasi OCR: hanya boleh menyimpan data milik operator yang sedang login
@@ -27,7 +28,8 @@ $sql  = "UPDATE log_ocr SET nik_final = nik_terdeteksi, status_proses = 'finaliz
 $stmt = mysqli_prepare($db, $sql);
 
 if (!$stmt) {
-    die('Terjadi kesalahan sistem.');
+    header('Location: ../riwayat.php?msg=gagal');
+    exit;
 }
 
 mysqli_stmt_bind_param($stmt, 'ii', $log_id, $user_id);
@@ -39,5 +41,6 @@ if (mysqli_stmt_execute($stmt)) {
 }
 
 mysqli_stmt_close($stmt);
-die('Gagal menyimpan data.');
+header('Location: ../riwayat.php?msg=gagal');
+exit;
 ?>

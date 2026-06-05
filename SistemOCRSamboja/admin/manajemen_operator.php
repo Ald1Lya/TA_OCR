@@ -7,6 +7,7 @@ if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role']) !== 'admin') {
 }
 
 require_once '../proses/config.php'; 
+require_once '../proses/csrf.php';
 
 $current_user = [
     'id'           => $_SESSION['user_id'],
@@ -50,52 +51,22 @@ function getInitials($name) {
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <link rel="icon" type="image/png" href="../../assetimage/logo.png" />
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Manajemen Operator - OCR KTP</title>
-    <link rel="stylesheet" href="/TUGASAKHIRCAPSTONE/assets/css/style.css" />
-    <script src="/TUGASAKHIRCAPSTONE/assets/js/chart.min.js"></script>
+    <link rel="stylesheet" href="../../assets/css/style.css" />
+    <script src="../../assets/js/chart.min.js"></script>
 
-    <style>
-        /* Deklarasi Font Inter Regular (400) */
-        @font-face {
-            font-family: 'Inter';
-            src: url('/TUGASAKHIRCAPSTONE/assets/fonts/Inter-Regular.ttf') format('truetype');
-            font-weight: 400;
-            font-style: normal;
+    <style> 
+        @keyframes highlightFade {
+            0% { background-color: #dcfce7; } /* green-100 */
+            100% { background-color: transparent; }
         }
-
-        /* Deklarasi Font Inter SemiBold (600) */
-        @font-face {
-            font-family: 'Inter';
-            src: url('/TUGASAKHIRCAPSTONE/assets/fonts/Inter-SemiBold.ttf') format('truetype');
-            font-weight: 600;
-            font-style: normal;
-        }
-
-        /* Deklarasi Font Inter Bold (700) */
-        @font-face {
-            font-family: 'Inter';
-            src: url('/TUGASAKHIRCAPSTONE/assets/fonts/static/Inter-Bold.ttf') format('truetype');
-            font-weight: 700;
-            font-style: normal;
-        }
-
-        /* Terapkan ke body */
-        body { 
-            font-family: 'Inter', sans-serif; 
+        .row-highlight {
+            animation: highlightFade 3s ease-out forwards;
         }
     </style>
-
-<style> 
-    @keyframes highlightFade {
-        0% { background-color: #dcfce7; } /* green-100 */
-        100% { background-color: transparent; }
-    }
-    .row-highlight {
-        animation: highlightFade 3s ease-out forwards;
-    }
-</style>
 </head>
 <body class="bg-gray-50 min-h-screen flex text-gray-800 antialiased">
 
@@ -180,6 +151,7 @@ function getInitials($name) {
                 </button>
                 <?php if(!$is_current): ?>
                 <form action="../proses/proses_pengaturan_pengguna.php" method="POST" class="inline m-0 form-hapus">
+                  <?= csrf_field() ?>
                   <input type="hidden" name="hapus_id" value="<?= $u['id'] ?>">
                   <button type="button" class="btn-delete inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-300 text-gray-700 hover:text-red-700 hover:border-red-500 rounded-lg shadow-sm font-medium text-sm transition-all active:scale-90">
                     <i data-feather="trash-2" class="w-4 h-4"></i> Hapus
@@ -208,7 +180,7 @@ function getInitials($name) {
   </div>
 </main>
 
-<div id="userModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm z-[9999] justify-center items-center p-4 transition-opacity duration-300 opacity-0">
+<div id="userModal" class="hidden fixed inset-0 z-[9999] justify-center items-center p-4 transition-opacity duration-300 opacity-0" style="background-color: rgba(0,0,0,0.3); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);">
   <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-200 transform transition-transform duration-300 scale-90">
     <div class="bg-green-600 px-6 py-4 border-b border-green-700">
       <h3 class="text-lg font-bold text-white flex items-center gap-2" id="modalTitle">
@@ -217,6 +189,7 @@ function getInitials($name) {
     </div>
     <form action="../proses/proses_pengaturan_pengguna.php" method="POST">
       <div class="px-6 py-5 space-y-5">
+        <?= csrf_field() ?>
         <input type="hidden" name="action" id="formAction" value="tambah">
         <input type="hidden" name="id" id="userId">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -258,8 +231,9 @@ function getInitials($name) {
   </div>
 </div>
 
-<script src="/TUGASAKHIRCAPSTONE/assets/js/feather.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> <script>
+<script src="../../assets/js/feather.min.js"></script>
+<script src="../../assets/js/sweetalert2.all.min.js"></script>
+<script>
 document.addEventListener('DOMContentLoaded', () => {
     feather.replace();
 

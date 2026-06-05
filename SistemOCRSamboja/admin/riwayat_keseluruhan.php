@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 session_start();
 require_once '../proses/config.php';
 require_once '../proses/csrf.php';
@@ -105,35 +105,13 @@ function badgeAdminStatus($status)
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <link rel="icon" type="image/png" href="../../assetimage/logo.png" />
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Riwayat Keseluruhan - Admin OCR</title>
 
-    <link rel="stylesheet" href="/TUGASAKHIRCAPSTONE/assets/css/style.css" />
+    <link rel="stylesheet" href="../../assets/css/style.css" />
 
-    <style>
-        @font-face {
-            font-family: 'Inter';
-            src: url('/TUGASAKHIRCAPSTONE/assets/fonts/Inter-Regular.ttf') format('truetype');
-            font-weight: 400;
-            font-style: normal;
-        }
-        @font-face {
-            font-family: 'Inter';
-            src: url('/TUGASAKHIRCAPSTONE/assets/fonts/Inter-SemiBold.ttf') format('truetype');
-            font-weight: 600;
-            font-style: normal;
-        }
-        @font-face {
-            font-family: 'Inter';
-            src: url('/TUGASAKHIRCAPSTONE/assets/fonts/static/Inter-Bold.ttf') format('truetype');
-            font-weight: 700;
-            font-style: normal;
-        }
-        body { 
-            font-family: 'Inter', sans-serif; 
-        }
-    </style>
 </head>
 <body class="bg-gray-50 min-h-screen flex text-gray-800 antialiased">
 
@@ -282,7 +260,7 @@ function badgeAdminStatus($status)
 
 </main>
 
-<script src="/TUGASAKHIRCAPSTONE/assets/js/feather.min.js"></script>
+<script src="../../assets/js/feather.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         feather.replace();

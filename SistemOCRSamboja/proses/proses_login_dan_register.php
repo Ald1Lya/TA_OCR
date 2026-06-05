@@ -16,9 +16,9 @@ $action = $_POST['action'];
 if ($action === 'register') {
     csrf_verify();
 
-    $username     = trim($_POST['username'] ?? '');
-    $password     = $_POST['password'] ?? '';
-    $nama_lengkap = trim($_POST['nama_lengkap'] ?? '');
+    $username     = trim(is_string($_POST['username'] ?? '') ? $_POST['username'] : '');
+    $password     = is_string($_POST['password'] ?? '') ? $_POST['password'] : '';
+    $nama_lengkap = trim(is_string($_POST['nama_lengkap'] ?? '') ? $_POST['nama_lengkap'] : '');
     $role         = 'admin';
     $status       = 'Aktif';
 
@@ -68,9 +68,9 @@ if ($action === 'register') {
 if ($action === 'login') {
     csrf_verify();
 
-    $username = trim($_POST['username'] ?? '');
-    $password = $_POST['password'] ?? '';
-    $role     = trim($_POST['role'] ?? '');
+    $username = trim(is_string($_POST['username'] ?? '') ? $_POST['username'] : '');
+    $password = is_string($_POST['password'] ?? '') ? $_POST['password'] : '';
+    $role     = trim(is_string($_POST['role'] ?? '') ? $_POST['role'] : '');
 
     $stmt = mysqli_prepare($db, "SELECT * FROM staf_kecamatan WHERE username = ? AND role = ?");
     mysqli_stmt_bind_param($stmt, 'ss', $username, $role);

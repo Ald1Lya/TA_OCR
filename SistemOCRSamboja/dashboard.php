@@ -30,13 +30,12 @@ if ($stmt) {
     if ($result_user && mysqli_num_rows($result_user) > 0) {
         $user = mysqli_fetch_assoc($result_user);
         if (!empty($user['last_login'])) {
-            $last_login = date('l, H:i', strtotime($user['last_login']));
+            $last_login = date('l, d M Y - H:i', strtotime($user['last_login']));
         }
     }
     mysqli_stmt_close($stmt);
 }
 
-// Statistik OCR pribadi
 $stats = [
     'total_proses'   => 0,
     'total_berhasil' => 0,
@@ -72,8 +71,13 @@ $total_pending  = (int)$stats['total_pending'];
 $tingkat_keberhasilan = ($total_proses > 0) ? ($total_berhasil / $total_proses) * 100 : 0;
 $avg_akurasi          = ((float) $stats['avg_skor']) * 100;
 
+// Kalkulasi Persentase
+$pct_berhasil = ($total_proses > 0) ? round(($total_berhasil / $total_proses) * 100, 1) : 0;
+$pct_gagal    = ($total_proses > 0) ? round(($total_gagal / $total_proses) * 100, 1) : 0;
+$pct_pending  = ($total_proses > 0) ? round(($total_pending / $total_proses) * 100, 1) : 0;
+
 $pie_data_values = [$total_berhasil, $total_gagal, $total_pending];
-$pie_data_labels = ['Berhasil (Final)', 'Gagal', 'Perlu Cek'];
+$pie_data_labels = ['Berhasil', 'Gagal', 'Perlu Cek'];
 
 $riwayat_terkini = [];
 $sql_riwayat = "SELECT 
@@ -100,7 +104,6 @@ if ($result_riwayat) {
 }
 mysqli_stmt_close($stmt_riwayat);
 
-// Grafik volume OCR harian pribadi
 $bar_labels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 $bar_data   = array_fill(0, 7, 0);
 
@@ -128,11 +131,15 @@ mysqli_stmt_close($stmt_harian);
 
 function getStatusBadge($status) {
     switch ($status) {
-        case 'finalized': return ['text' => 'Berhasil', 'class' => 'bg-green-100 text-green-700'];
-        case 'pending_review': return ['text' => 'Perlu Cek', 'class' => 'bg-yellow-100 text-yellow-700'];
+        case 'finalized': 
+            return '<span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-bold">Berhasil</span>';
+        case 'pending_review': 
+            return '<span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-bold">Perlu Cek</span>';
         case 'failed':
-        case 'error_php': return ['text' => 'Gagal', 'class' => 'bg-red-100 text-red-700'];
-        default: return ['text' => 'Memproses', 'class' => 'bg-gray-100 text-gray-700'];
+        case 'error_php': 
+            return '<span class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-bold">Gagal</span>';
+        default: 
+            return '<span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-bold">Proses</span>';
     }
 }
 ?>
@@ -140,130 +147,136 @@ function getStatusBadge($status) {
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <link rel="icon" type="image/png" href="../assetimage/logo.png" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Operator - OCR KTP</title>
     <link rel="stylesheet" href="../assets/css/style.css" />
-
     <script src="../assets/js/chart.min.js"></script>
-
     <style>
-        /* Deklarasi Font Inter Regular (400) */
-        @font-face {
-            font-family: 'Inter';
-            src: url('../assets/fonts/Inter-Regular.ttf') format('truetype');
-            font-weight: 400;
-            font-style: normal;
-        }
-
-        /* Deklarasi Font Inter SemiBold (600) */
-        @font-face {
-            font-family: 'Inter';
-            src: url('../assets/fonts/Inter-SemiBold.ttf') format('truetype');
-            font-weight: 600;
-            font-style: normal;
-        }
-
-        /* Deklarasi Font Inter Bold (700) */
-        @font-face {
-            font-family: 'Inter';
-            src: url('../assets/fonts/static/Inter-Bold.ttf') format('truetype');
-            font-weight: 700;
-            font-style: normal;
-        }
-
-        /* Terapkan ke body */
-        body { 
-            font-family: 'Inter', sans-serif; 
-        }
+        body { font-family: 'Inter', sans-serif; }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen flex text-gray-800 antialiased">
+<body class="bg-gray-50 min-h-screen text-gray-800 antialiased">
 
 <?php if (file_exists(__DIR__.'/includes/navbar.php')) include 'includes/navbar.php'; ?>
 
 <main class="flex-1 ml-64 p-8">
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">Dashboard Operator</h1>
-        <p class="text-gray-500">Ringkasan hasil kerja ekstraksi KTP Anda.</p>
+    
+    <!-- Header Standar -->
+    <div class="mb-8 flex justify-between items-end">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Dashboard Operator</h1>
+            <p class="text-sm text-gray-500 mt-1">Sistem Ekstraksi Dokumen Administrasi Kecamatan</p>
+        </div>
+        <div class="text-right">
+            <div class="text-sm font-semibold text-gray-800">Halo, <?= htmlspecialchars($_SESSION['nama_lengkap'] ?? 'User') ?></div>
+            <p class="text-xs text-gray-500 mt-1">Terakhir aktif: <?= $last_login ?></p>
+        </div>
     </div>
 
-    <div class="p-6 bg-white rounded-xl border border-gray-200 shadow-sm mb-8">
-        <h2 class="text-xl font-bold mb-1">Selamat Datang, <?= htmlspecialchars($_SESSION['nama_lengkap'] ?? 'User') ?></h2>
-        <p class="text-gray-500 text-sm">Terakhir login: <span class="font-semibold text-gray-700"><?= htmlspecialchars($last_login) ?></span></p>
-    </div>
-
+    <!-- Statistik Utama -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <?php
-        $cards = [
-            ['value'=>$total_proses,'label'=>'KTP Saya Proses','color'=>'green','icon'=>'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h10a2 2 0 012 2v14a2 2 0 01-2 2z'],
-            ['value'=>number_format($tingkat_keberhasilan,1).'%','label'=>'Persentase Sukses','color'=>'emerald','icon'=>'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'],
-            ['value'=>number_format($avg_akurasi,1).'%','label'=>'Rata-rata Akurasi','color'=>'blue','icon'=>'M13 10V3L4 14h7v7l9-11h-7z']
-        ];
-        foreach($cards as $c):
-        ?>
-        <div class="p-6 bg-white rounded-xl border border-gray-200 shadow-sm">
-            <div class="w-10 h-10 flex items-center justify-center rounded-lg bg-<?= $c['color'] ?>-50 text-<?= $c['color'] ?>-600 mb-4">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="<?= $c['icon'] ?>"></path></svg>
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex items-center gap-4">
+            <div class="p-4 bg-green-50 text-green-600 rounded-lg">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h10a2 2 0 012 2v14a2 2 0 01-2 2z"></path></svg>
             </div>
-            <h3 class="text-2xl font-bold text-gray-900"><?= $c['value'] ?></h3>
-            <p class="text-sm font-medium text-gray-500"><?= $c['label'] ?></p>
+            <div>
+                <p class="text-sm font-medium text-gray-500">KTP Saya Proses</p>
+                <h3 class="text-2xl font-bold text-gray-900"><?= $total_proses ?></h3>
+            </div>
         </div>
-        <?php endforeach; ?>
+        
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex items-center gap-4">
+            <div class="p-4 bg-emerald-50 text-emerald-600 rounded-lg">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-500">Tingkat Keberhasilan</p>
+                <h3 class="text-2xl font-bold text-gray-900"><?= number_format($tingkat_keberhasilan, 1) ?>%</h3>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex items-center gap-4">
+            <div class="p-4 bg-blue-50 text-blue-600 rounded-lg">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-500">Rata-rata Akurasi</p>
+                <h3 class="text-2xl font-bold text-gray-900"><?= number_format($avg_akurasi, 1) ?>%</h3>
+            </div>
+        </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <div class="p-6 bg-white rounded-xl border border-gray-200 shadow-sm">
-            <h3 class="font-bold mb-6 text-gray-800">Produktivitas</h3>
-            <canvas id="barChart" height="180"></canvas>
+    <!-- Area Grafik -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <h3 class="font-bold text-gray-800 mb-4">Volume Ekstraksi Harian</h3>
+            <div class="relative h-56">
+                <canvas id="barChart"></canvas>
+            </div>
         </div>
-        <div class="p-6 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col items-center">
-            <h3 class="font-bold mb-6 text-gray-800">Status Hasil Scan Saya</h3>
-            <div class="relative w-64 h-64">
-                <canvas id="pieChart"></canvas>
-                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span class="text-xl font-bold text-gray-900"><?= $total_berhasil ?></span>
-                    <span class="text-xs text-gray-400">Sukses</span>
+        
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 flex flex-col">
+            <h3 class="font-bold text-gray-800 mb-4">Status Validasi Dokumen</h3>
+            <div class="flex-1 flex flex-col items-center justify-center">
+                <div class="relative w-32 h-32 mb-4">
+                    <canvas id="pieChart"></canvas>
+                </div>
+                <!-- Legenda Presentase -->
+                <div class="w-full space-y-2 mt-2 px-2">
+                    <div class="flex justify-between items-center text-sm border-b border-gray-100 pb-1">
+                        <span class="flex items-center gap-2 text-gray-600"><span class="w-3 h-3 bg-green-500 rounded-full"></span> Berhasil</span>
+                        <span class="font-bold text-gray-800"><?= $total_berhasil ?> <span class="text-gray-400 font-normal">(<?= $pct_berhasil ?>%)</span></span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm border-b border-gray-100 pb-1">
+                        <span class="flex items-center gap-2 text-gray-600"><span class="w-3 h-3 bg-red-500 rounded-full"></span> Gagal</span>
+                        <span class="font-bold text-gray-800"><?= $total_gagal ?> <span class="text-gray-400 font-normal">(<?= $pct_gagal ?>%)</span></span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="flex items-center gap-2 text-gray-600"><span class="w-3 h-3 bg-yellow-400 rounded-full"></span> Perlu Cek</span>
+                        <span class="font-bold text-gray-800"><?= $total_pending ?> <span class="text-gray-400 font-normal">(<?= $pct_pending ?>%)</span></span>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-            <h3 class="font-bold text-gray-800">5 Scan Terakhir Saya</h3>
-            <a href="riwayat.php" class="text-sm font-bold text-green-600 hover:text-green-800">Lihat Semua &rarr;</a>
-        </div>
-        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-            <a href="upload.php" class="text-sm font-bold text-green-600 hover:text-green-800">Upload KTP &rarr;</a>
+    <!-- Tabel Riwayat -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+            <h3 class="font-bold text-gray-800">Riwayat 5 Scan Terakhir</h3>
+            <div class="flex gap-2">
+                <a href="riwayat.php" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded text-sm font-semibold hover:bg-gray-100 transition">Lihat Semua &rarr;</a>
+                <a href="upload.php" class="px-4 py-2 bg-green-600 text-white rounded text-sm font-semibold hover:bg-green-700 transition">Upload KTP</a>
+            </div>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-sm text-left">
-                <thead class="bg-gray-50 border-b">
-                    <tr class="text-gray-500 uppercase text-[10px] tracking-wider font-bold">
-                        <th class="py-3 px-6">Waktu</th>
-                        <th class="py-3 px-6">Nama File</th>
-                        <th class="py-3 px-6">Status</th>
-                        <th class="py-3 px-6">Skor Akurasi</th>
+                <thead class="bg-white border-b border-gray-200">
+                    <tr>
+                        <th class="py-3 px-6 font-semibold text-gray-500">Waktu</th>
+                        <th class="py-3 px-6 font-semibold text-gray-500">Nama File</th>
+                        <th class="py-3 px-6 font-semibold text-gray-500 text-center">Status</th>
+                        <th class="py-3 px-6 font-semibold text-gray-500 text-right">Akurasi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     <?php if (count($riwayat_terkini) === 0): ?>
-                        <tr><td colspan="4" class="py-10 text-center text-gray-400 italic">Belum ada aktivitas scan.</td></tr>
+                        <tr><td colspan="4" class="py-8 text-center text-gray-500">Belum ada dokumen yang diproses.</td></tr>
                     <?php else: ?>
-                        <?php foreach ($riwayat_terkini as $data): 
-                            $status = getStatusBadge($data['status'] ?? '');
-                        ?>
-                        <tr class="hover:bg-gray-50 transition">
-                            <td class="py-4 px-6 text-gray-500"><?= date('H:i', strtotime($data['waktu_proses'])) ?></td>
-                            <td class="py-4 px-6 font-semibold text-gray-800"><?= htmlspecialchars($data['nama_file']) ?></td>
-                            <td class="py-4 px-6">
-                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase <?= $status['class'] ?>">
-                                    <?= $status['text'] ?>
-                                </span>
+                        <?php foreach ($riwayat_terkini as $data): ?>
+                        <tr class="hover:bg-gray-50">
+                            <td class="py-3 px-6 text-gray-600">
+                                <?= date('d/m/Y', strtotime($data['waktu_proses'])) ?> <span class="text-xs text-gray-400 ml-1"><?= date('H:i', strtotime($data['waktu_proses'])) ?></span>
                             </td>
-                            <td class="py-4 px-6 font-mono font-bold <?= ((float)$data['akurasi'] > 0.8) ? 'text-green-600' : 'text-yellow-600' ?>">
-                                <?= number_format(((float)$data['akurasi']) * 100, 1) ?>%
+                            <td class="py-3 px-6 font-medium text-gray-800"><?= htmlspecialchars($data['nama_file']) ?></td>
+                            <td class="py-3 px-6 text-center"><?= getStatusBadge($data['status']) ?></td>
+                            <td class="py-3 px-6 text-right">
+                                <?php $acc = ((float)$data['akurasi']) * 100; ?>
+                                <span class="font-mono font-medium <?= ($acc >= 97) ? 'text-green-600' : 'text-yellow-600' ?>">
+                                    <?= number_format($acc, 1) ?>%
+                                </span>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -275,34 +288,42 @@ function getStatusBadge($status) {
 </main>
 
 <script>
-    // Bar Chart
+    Chart.defaults.font.family = "inherit";
+    Chart.defaults.color = '#6b7280';
+
     new Chart(document.getElementById('barChart'), {
         type: 'bar',
         data: {
-            labels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
+            labels: <?= json_encode($bar_labels) ?>,
             datasets: [{
-                label: 'KTP di-scan',
                 data: <?= json_encode($bar_data) ?>,
-                backgroundColor: '#16a34a',
-                borderRadius: 6
+                backgroundColor: '#009914ff',
+                borderRadius: 4
             }]
         },
-        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } }, 
+            scales: { 
+                y: { beginAtZero: true, border: {dash: [2, 2]}, grid: {color: '#f3f4f6'}, ticks: { stepSize: 1 } },
+                x: { grid: {display: false} }
+            } 
+        }
     });
 
-    // Pie Chart
     new Chart(document.getElementById('pieChart'), {
         type: 'doughnut',
         data: {
             labels: <?= json_encode($pie_data_labels) ?>,
             datasets: [{
                 data: <?= json_encode($pie_data_values) ?>,
-                backgroundColor: ['#16a34a','#ef4444','#f59e0b'],
-                borderWidth: 0,
-                hoverOffset: 4
+                backgroundColor: ['#009914ff', '#ef4444', '#facc15'],
+                borderWidth: 1,
+                borderColor: '#fff'
             }]
         },
-        options: { cutout: '80%', plugins: { legend: { display: false } } }
+        options: { cutout: '75%', plugins: { legend: { display: false } } }
     });
 </script>
 </body>
